@@ -1,0 +1,24 @@
+# Dépendances
+node_modules/
+
+# Environnement (Sécurité absolue pour le jury)
+.env
+.env.local
+.env.development
+.env.production
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build (Frontend)
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
