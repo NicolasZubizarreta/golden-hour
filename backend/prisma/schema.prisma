@@ -7,8 +7,84 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// -----------------------------------------------------------------------------
+// 1. UTILISATEURS
+// -----------------------------------------------------------------------------
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id        Int           @id @default(autoincrement())
+  email     String        @unique
+  password  String        // Gabriel hachera le mot de passe ici avec bcrypt
+  name      String
+  avatar    String?       // Optionnel pour plus tard
+  createdAt DateTime      @default(now())
+  
+  // Relations
+  groups    GroupMember[] // Lien vers les groupes auxquels l'utilisateur appartient
+}
+
+// -----------------------------------------------------------------------------
+// 2. GROUPES (Le coeur de l'app)
+// -----------------------------------------------------------------------------
+model Group {
+  id         Int           @id @default(autoincrement())
+  name       String
+  type       GroupType     @default(FRIENDS)
+  inviteCode String        @unique // Le code d'invitation
+  createdAt  DateTime      @default(now())
+
+  // Relations
+  members    GroupMember[]
+  widgets    Widget[]
+}
+
+enum GroupType {
+  COUPLE
+  FRIENDS
+}
+
+// -----------------------------------------------------------------------------
+// 3. LA TABLE PIVOT (Membres & Rôles)
+// -----------------------------------------------------------------------------
+model GroupMember {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  groupId   Int
+  role      Role     @default(MEMBER)
+  joinedAt  DateTime @default(now())
+
+  // Si on supprime un user ou un groupe, ça supprime proprement ce lien (Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  // Un utilisateur ne peut être qu'une seule fois dans un même groupe
+  @@unique([userId, groupId])
+}
+
+enum Role {
+  ADMIN   // Créateur du groupe (Peut tout faire)
+  EDITOR  // Bras droit (Peut gérer les widgets)
+  MEMBER  // Simple participant
+}
+
+// -----------------------------------------------------------------------------
+// 4. LES WIDGETS (Actifs ou inactifs)
+// -----------------------------------------------------------------------------
+model Widget {
+  id        Int        @id @default(autoincrement())
+  groupId   Int
+  type      WidgetType
+  isActive  Boolean    @default(true)
+
+  group     Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  // Un groupe ne peut avoir qu'un seul widget d'un certain type activé
+  @@unique([groupId, type])
+}
+
+enum WidgetType {
+  NOTES
+  MAP
+  SPOTIFY
+  BUDGET
+  COUNTDOWN
 }
