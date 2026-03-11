@@ -4,6 +4,14 @@ const generateInviteCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 };
 
+const parsePositiveInt = (value) => {
+  if (typeof value !== 'string' || !/^\d+$/.test(value)) {
+    return null;
+  }
+
+  return parseInt(value, 10);
+};
+
 // --- 1. CRÉER UN GROUPE (POST) ---
 exports.createGroup = async (req, res) => {
   try {
@@ -38,6 +46,7 @@ exports.createGroup = async (req, res) => {
             name: name.trim(),
             type: groupType,
             inviteCode: generateInviteCode(),
+            createdById: userId,
             members: {
               create: {
                 userId: userId,
@@ -132,6 +141,202 @@ exports.getGroupById = async (req, res) => {
     }
 
     res.status(200).json({ group });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur.", error: error.message });
+  }
+};
+
+// --- 4. REJOINDRE UN GROUPE VIA CODE (POST /join) ---
+exports.joinGroup = async (req, res) => {
+  try {
+    const { inviteCode } = req.body;
+    const userId = req.user.id;
+
+    if (!inviteCode || typeof inviteCode !== 'string' || inviteCode.trim() === '') {
+      return res.status(400).json({ message: "Le code d'invitation est invalide." });
+    }
+
+    // Chercher le groupe correspondant au code (en majuscules pour éviter la casse)
+    const group = await prisma.group.findUnique({
+      where: { inviteCode: inviteCode.trim().toUpperCase() }
+    });
+
+    if (!group) {
+      return res.status(404).json({ message: "Code d'invitation introuvable ou expiré." });
+    }
+
+    // Vérifier si l'utilisateur est déjà dans ce groupe
+    const existingMember = await prisma.groupMember.findUnique({
+      where: {
+        userId_groupId: {
+          userId: userId,
+          groupId: group.id
+        }
+      }
+    });
+
+    if (existingMember) {
+      return res.status(400).json({ message: "Vous êtes déjà membre de ce groupe." });
+    }
+
+    // Ajouter l'utilisateur au groupe avec le rôle "MEMBER"
+    await prisma.groupMember.create({
+      data: {
+        userId: userId,
+        groupId: group.id,
+        role: 'MEMBER' // Par défaut en rejoignant
+      }
+    });
+
+    res.status(200).json({ 
+      message: "Vous avez rejoint le groupe avec succès !", 
+      groupId: group.id,
+      groupName: group.name 
+    });
+
+  } catch (error) {
+    if (error.code === 'P2002') {
+      return res.status(400).json({ message: "Vous êtes déjà membre de ce groupe." });
+    }
+
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur.", error: error.message });
+  }
+};
+
+// --- 5. MODIFIER LE RÔLE D'UN MEMBRE (PUT) ---
+exports.updateMemberRole = async (req, res) => {
+  try {
+    const groupId = parsePositiveInt(req.params.id);
+    const targetUserId = parsePositiveInt(req.params.userId);
+    const requesterId = req.user.id;
+    const { role } = req.body;
+
+    if (groupId === null || targetUserId === null) {
+      return res.status(400).json({ message: "IDs invalides." });
+    }
+
+    if (typeof role !== 'string') {
+      return res.status(400).json({ message: "Le rôle doit être une chaîne de caractères." });
+    }
+
+    const validRoles = ['ADMIN', 'EDITOR', 'MEMBER'];
+    const newRole = role.trim().toUpperCase();
+
+    if (!validRoles.includes(newRole)) {
+      return res.status(400).json({ message: "Le rôle doit être ADMIN, EDITOR ou MEMBER." });
+    }
+
+    const group = req.groupContext || await prisma.group.findUnique({
+      where: { id: groupId },
+      select: { id: true, createdById: true },
+    });
+
+    if (!group) {
+      return res.status(404).json({ message: "Groupe introuvable." });
+    }
+
+    // On vérifie que le membre cible existe bien dans ce groupe
+    const targetMember = await prisma.groupMember.findUnique({
+      where: { userId_groupId: { userId: targetUserId, groupId: groupId } }
+    });
+
+    if (!targetMember) {
+      return res.status(404).json({ message: "Cet utilisateur ne fait pas partie du groupe." });
+    }
+
+    const isRequesterCreator = group.createdById === requesterId;
+    const isTargetCreator = group.createdById === targetUserId;
+    const isTargetAdmin = targetMember.role === 'ADMIN';
+
+    if (newRole === 'ADMIN' && !isRequesterCreator) {
+      return res.status(403).json({ message: "Seul le créateur du groupe peut nommer un autre administrateur." });
+    }
+
+    if (isTargetCreator && newRole !== 'ADMIN') {
+      return res.status(403).json({ message: "Le créateur du groupe doit conserver le rôle ADMIN." });
+    }
+
+    if (isTargetAdmin && !isRequesterCreator && targetUserId !== requesterId) {
+      return res.status(403).json({ message: "Seul le créateur du groupe peut modifier le rôle d'un autre administrateur." });
+    }
+
+    // Mise à jour du rôle
+    const updatedMember = await prisma.groupMember.update({
+      where: { userId_groupId: { userId: targetUserId, groupId: groupId } },
+      data: { role: newRole }
+    });
+
+    res.status(200).json({ message: "Rôle mis à jour avec succès.", member: updatedMember });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur.", error: error.message });
+  }
+};
+
+// --- 6. EXPULSER UN MEMBRE OU QUITTER LE GROUPE (DELETE) ---
+exports.removeMember = async (req, res) => {
+  try {
+    const groupId = parsePositiveInt(req.params.id);
+    const targetUserId = parsePositiveInt(req.params.userId);
+    const requesterId = req.user.id; // Celui qui fait la requête
+
+    if (groupId === null || targetUserId === null) {
+      return res.status(400).json({ message: "IDs invalides." });
+    }
+
+    const [group, requesterMember, targetMember] = await Promise.all([
+      req.groupContext ? Promise.resolve(req.groupContext) : prisma.group.findUnique({
+        where: { id: groupId },
+        select: { id: true, createdById: true },
+      }),
+      req.requesterMembership ? Promise.resolve(req.requesterMembership) : prisma.groupMember.findUnique({
+        where: { userId_groupId: { userId: requesterId, groupId: groupId } }
+      }),
+      prisma.groupMember.findUnique({
+        where: { userId_groupId: { userId: targetUserId, groupId: groupId } }
+      }),
+    ]);
+
+    if (!group) {
+      return res.status(404).json({ message: "Groupe introuvable." });
+    }
+
+    if (!requesterMember) {
+      return res.status(403).json({ message: "Vous ne faites pas partie de ce groupe." });
+    }
+
+    if (!targetMember) {
+      return res.status(404).json({ message: "Cet utilisateur ne fait pas partie du groupe." });
+    }
+
+    const isSelfAction = requesterId === targetUserId;
+    const isRequesterCreator = group.createdById === requesterId;
+    const isTargetCreator = group.createdById === targetUserId;
+
+    if (isTargetCreator) {
+      return res.status(403).json({ message: "Le créateur du groupe ne peut pas être retiré du groupe." });
+    }
+
+    // LA LOGIQUE RBAC (Hiérarchie)
+    if (!isSelfAction) {
+      if (requesterMember.role === 'EDITOR' && targetMember.role !== 'MEMBER') {
+        return res.status(403).json({ message: "Accès refusé. Un éditeur ne peut expulser qu'un simple membre." });
+      }
+
+      if (requesterMember.role === 'ADMIN' && targetMember.role === 'ADMIN' && !isRequesterCreator) {
+        return res.status(403).json({ message: "Seul le créateur du groupe peut expulser un autre administrateur." });
+      }
+    }
+
+    // Action autorisée, on supprime le membre.
+    await prisma.groupMember.delete({
+      where: { userId_groupId: { userId: targetUserId, groupId: groupId } }
+    });
+
+    const action = requesterId === targetUserId ? "Vous avez quitté le groupe." : "Membre expulsé avec succès.";
+    res.status(200).json({ message: action });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Erreur serveur.", error: error.message });
