@@ -13,13 +13,14 @@ datasource db {
 model User {
   id        Int           @id @default(autoincrement())
   email     String        @unique
-  password  String        // Gabriel hachera le mot de passe ici avec bcrypt
+  password  String        
   name      String
   avatar    String?       // Optionnel pour plus tard
   createdAt DateTime      @default(now())
   
   // Relations
-  groups    GroupMember[] // Lien vers les groupes auxquels l'utilisateur appartient
+  groups        GroupMember[] // Lien vers les groupes auxquels l'utilisateur appartient
+  createdGroups Group[]       @relation("GroupCreator")
 }
 
 // -----------------------------------------------------------------------------
@@ -30,9 +31,11 @@ model Group {
   name       String
   type       GroupType     @default(FRIENDS)
   inviteCode String        @unique // Le code d'invitation
+  createdById Int
   createdAt  DateTime      @default(now())
 
   // Relations
+  createdBy  User          @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Restrict)
   members    GroupMember[]
   widgets    Widget[]
 }
