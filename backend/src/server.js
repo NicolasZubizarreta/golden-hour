@@ -1,19 +1,25 @@
+// Imports des modules externes
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+
+// Imports internes (BDD et Routes)
 const prisma = require('./lib/prisma');
-
-// On importe tes nouvelles routes d'authentification
 const authRoutes = require('./routes/auth.routes'); 
+const groupRoutes = require('./routes/group.routes');
 
+// Initialisation de l'app
 const app = express();
+
+// Middlewares globaux
 app.use(cors());
 app.use(express.json());
 
-// On branche les routes d'authentification sur l'URL /api/auth
+// Branchement des routes
 app.use('/api/auth', authRoutes); 
+app.use('/api/groups', groupRoutes);
 
-// Route de Health Check
+// Route de Health Check (Vérification serveur/BDD)
 app.get('/api/health', async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -24,5 +30,6 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// Lancement du serveur
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Serveur sur http://localhost:${PORT}`));
