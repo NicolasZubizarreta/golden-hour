@@ -9,7 +9,9 @@ router.post('/', verifyToken, groupController.createGroup);
 router.get('/', verifyToken, groupController.getGroups);
 router.post('/join', verifyToken, groupController.joinGroup)
 router.get('/:id', verifyToken, groupController.getGroupById);
-router.put('/:id/members/:userId', verifyToken, checkRole(['ADMIN'], { onlyCreatorCanAssignAdmin: true }), groupController.updateMemberRole);
+router.put('/:id/members/:userId', verifyToken, checkRole(['ADMIN']), groupController.updateMemberRole);
 router.delete('/:id/members/:userId', verifyToken, checkRole(['ADMIN', 'EDITOR'], { allowSelf: true }), groupController.removeMember);
+router.put('/:id/transfer', verifyToken, checkRole(['ADMIN'], { creatorOnly: true }), groupController.transferOwnership);
+router.delete('/:id', verifyToken, checkRole(['ADMIN'], { creatorOnly: true }), groupController.deleteGroup);
 
 module.exports = router;

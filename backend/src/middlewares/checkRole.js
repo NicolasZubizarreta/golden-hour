@@ -20,7 +20,7 @@ const normalizeRole = (role) => {
 const checkRole = (allowedRoles, options = {}) => {
   const {
     allowSelf = false,
-    onlyCreatorCanAssignAdmin = false,
+    creatorOnly = false,
   } = options;
 
   return async (req, res, next) => {
@@ -75,9 +75,9 @@ const checkRole = (allowedRoles, options = {}) => {
         });
       }
 
-      if (onlyCreatorCanAssignAdmin && normalizeRole(req.body?.role) === 'ADMIN' && group.createdById !== userId) {
+      if (creatorOnly && group.createdById !== userId) {
         return res.status(403).json({
-          message: "Seul le créateur du groupe peut nommer un autre administrateur.",
+          message: "Seul le créateur du groupe peut effectuer cette action.",
         });
       }
 
