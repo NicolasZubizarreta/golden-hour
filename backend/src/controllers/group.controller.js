@@ -5,11 +5,15 @@ const generateInviteCode = () => {
 };
 
 const parsePositiveInt = (value) => {
-  if (typeof value !== 'string' || !/^\d+$/.test(value)) {
-    return null;
+  if (typeof value === 'number' && Number.isInteger(value) && value > 0) {
+    return value;
   }
 
-  return parseInt(value, 10);
+  if (typeof value === 'string' && /^\d+$/.test(value)) {
+    return parseInt(value, 10);
+  }
+
+  return null;
 };
 
 // --- 1. CRÉER UN GROUPE (POST) ---
@@ -221,11 +225,11 @@ exports.updateMemberRole = async (req, res) => {
       return res.status(400).json({ message: "Le rôle doit être une chaîne de caractères." });
     }
 
-    const validRoles = ['ADMIN', 'EDITOR', 'MEMBER'];
+    const validRoles = ['EDITOR', 'MEMBER'];
     const newRole = role.trim().toUpperCase();
 
     if (!validRoles.includes(newRole)) {
-      return res.status(400).json({ message: "Le rôle doit être ADMIN, EDITOR ou MEMBER." });
+      return res.status(400).json({ message: "Le rôle doit être EDITOR ou MEMBER." });
     }
 
     const group = req.groupContext || await prisma.group.findUnique({
@@ -246,20 +250,10 @@ exports.updateMemberRole = async (req, res) => {
       return res.status(404).json({ message: "Cet utilisateur ne fait pas partie du groupe." });
     }
 
-    const isRequesterCreator = group.createdById === requesterId;
     const isTargetCreator = group.createdById === targetUserId;
-    const isTargetAdmin = targetMember.role === 'ADMIN';
-
-    if (newRole === 'ADMIN' && !isRequesterCreator) {
-      return res.status(403).json({ message: "Seul le créateur du groupe peut nommer un autre administrateur." });
-    }
 
     if (isTargetCreator && newRole !== 'ADMIN') {
       return res.status(403).json({ message: "Le créateur du groupe doit conserver le rôle ADMIN." });
-    }
-
-    if (isTargetAdmin && !isRequesterCreator && targetUserId !== requesterId) {
-      return res.status(403).json({ message: "Seul le créateur du groupe peut modifier le rôle d'un autre administrateur." });
     }
 
     // Mise à jour du rôle
@@ -337,6 +331,93 @@ exports.removeMember = async (req, res) => {
 
     const action = requesterId === targetUserId ? "Vous avez quitté le groupe." : "Membre expulsé avec succès.";
     res.status(200).json({ message: action });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur.", error: error.message });
+  }
+};
+
+// --- 7. SUPPRIMER DÉFINITIVEMENT LE GROUPE (DELETE) ---
+exports.deleteGroup = async (req, res) => {
+  try {
+    const groupId = parsePositiveInt(req.params.id);
+    const requesterId = req.user.id;
+
+    if (groupId === null) {
+      return res.status(400).json({ message: "ID du groupe invalide." });
+    }
+
+    // Le checkRole s'assurera qu'on est bien ADMIN, mais on vérifie par précaution
+    const group = await prisma.group.findUnique({ where: { id: groupId } });
+    
+    if (!group) {
+      return res.status(404).json({ message: "Groupe introuvable." });
+    }
+
+    // Grâce au onDelete: Cascade dans le schema.prisma, supprimer le groupe
+    // supprimera automatiquement tous les membres et les widgets associés
+    await prisma.group.delete({
+      where: { id: groupId }
+    });
+
+    res.status(200).json({ message: "Le groupe a été supprimé définitivement." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur.", error: error.message });
+  }
+};
+
+// --- 8. TRANSFÉRER LA PROPRIÉTÉ DU GROUPE (PUT) ---
+exports.transferOwnership = async (req, res) => {
+  try {
+    const groupId = parsePositiveInt(req.params.id);
+    const newAdminId = parsePositiveInt(req.body.newAdminId);
+    const requesterId = req.user.id;
+
+    if (groupId === null || newAdminId === null) {
+      return res.status(400).json({ message: "IDs invalides." });
+    }
+
+    if (requesterId === newAdminId) {
+      return res.status(400).json({ message: "Vous êtes déjà le propriétaire du groupe." });
+    }
+
+    const group = await prisma.group.findUnique({ where: { id: groupId } });
+    if (!group) return res.status(404).json({ message: "Groupe introuvable." });
+
+    // Vérifier que le futur boss est bien dans le groupe
+    const targetMember = await prisma.groupMember.findUnique({
+      where: { userId_groupId: { userId: newAdminId, groupId: groupId } }
+    });
+
+    if (!targetMember) {
+      return res.status(404).json({ message: "Le futur propriétaire doit déjà être membre du groupe." });
+    }
+
+    if (targetMember.role !== 'EDITOR') {
+      return res.status(400).json({ message: "Le futur propriétaire doit déjà avoir le rôle EDITOR." });
+    }
+
+    // TRANSACTION PRISMA : On fait les 3 actions en même temps de manière sécurisée
+    await prisma.$transaction([
+      // 1. Rétrograder le créateur actuel en EDITOR (comme ça il garde des droits)
+      prisma.groupMember.update({
+        where: { userId_groupId: { userId: requesterId, groupId: groupId } },
+        data: { role: 'EDITOR' }
+      }),
+      // 2. Promouvoir le nouveau membre en ADMIN
+      prisma.groupMember.update({
+        where: { userId_groupId: { userId: newAdminId, groupId: groupId } },
+        data: { role: 'ADMIN' }
+      }),
+      // 3. Mettre à jour le créateur du groupe dans la table Group
+      prisma.group.update({
+        where: { id: groupId },
+        data: { createdById: newAdminId }
+      })
+    ]);
+
+    res.status(200).json({ message: "La propriété du groupe a été transférée avec succès." });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Erreur serveur.", error: error.message });
