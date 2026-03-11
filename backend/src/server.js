@@ -7,6 +7,7 @@ const cors = require('cors');
 const prisma = require('./lib/prisma');
 const authRoutes = require('./routes/auth.routes'); 
 const groupRoutes = require('./routes/group.routes');
+const userRoutes = require('./routes/user.routes');
 
 // Initialisation de l'app
 const app = express();
@@ -18,6 +19,7 @@ app.use(express.json());
 // Branchement des routes
 app.use('/api/auth', authRoutes); 
 app.use('/api/groups', groupRoutes);
+app.use('/api/users', userRoutes);
 
 // Route de Health Check (Vérification serveur/BDD)
 app.get('/api/health', async (req, res) => {
