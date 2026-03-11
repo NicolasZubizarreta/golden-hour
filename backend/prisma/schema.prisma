@@ -17,6 +17,9 @@ model User {
   name      String
   avatar    String?       // Optionnel pour plus tard
   createdAt DateTime      @default(now())
+
+  resetPasswordToken   String?       @unique
+  resetPasswordExpires DateTime?
   
   // Relations
   groups        GroupMember[] // Lien vers les groupes auxquels l'utilisateur appartient
