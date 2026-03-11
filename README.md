@@ -19,7 +19,7 @@ Golden Hour est une application web full-stack d'organisation de voyages et de s
 - **Back-end :** Node.js, Express.js.
 - **Base de données :** MySQL 8.
 - **ORM :** Prisma (v6).
-- **Sécurité :** JWT (JSON Web Tokens) & Bcrypt.
+- **Sécurité :** JWT (JSON Web Tokens) & Bcryptjs.
 
 ## 👥 L'Équipe (Team Golden Hour)
 - **Nicolas :** Chef de Projet & Lead Tech (Architecture globale et BDD)
@@ -60,4 +60,13 @@ npm run dev
 Ouvrir un nouveau terminal :
 cd frontend
 npm install
+
 npm run dev
+
+### 📧 Tests d'envoi d'emails (Mot de passe oublié)
+
+Pour tester l'envoi d'emails en local sans spammer de vraies adresses, nous utilisons **Mailtrap**.
+1. Créez un compte gratuit sur [Mailtrap](https://mailtrap.io/).
+2. Allez dans `Sandboxes` > `My Sandbox`.
+3. Récupérez vos identifiants SMTP et ajoutez-les dans votre fichier `.env` (voir `.env.example`).
+4. Les emails envoyés par l'API (ex: `POST /api/auth/forgot-password`) apparaîtront directement dans votre interface Mailtrap !
