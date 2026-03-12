@@ -95,9 +95,15 @@ export default function Hub() {
       {/* En-tête */}
       <div className="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm">
         <h1 className="text-2xl font-bold">Bonjour, {user?.name || 'Aventurier'} 👋</h1>
-        <button onClick={logout} className="px-4 py-2 bg-red-100 text-red-600 font-semibold rounded hover:bg-red-200">
-          Déconnexion
-        </button>
+        
+        <div className="flex items-center gap-4">
+          <Link to="/profile" className="text-sm font-semibold text-gray-600 hover:text-gray-900 underline">
+            Mon Profil
+          </Link>
+          <button onClick={logout} className="px-4 py-2 bg-red-100 text-red-600 font-semibold rounded hover:bg-red-200">
+            Déconnexion
+          </button>
+        </div>
       </div>
 
       {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-6 text-sm">{error}</div>}

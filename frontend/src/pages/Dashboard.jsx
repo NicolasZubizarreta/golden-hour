@@ -135,6 +135,37 @@ export default function Dashboard() {
     }
   };
 
+  const handleLeaveGroup = async () => {
+    if (!currentUserId) {
+      setError("Session utilisateur introuvable.");
+      return;
+    }
+
+    if (window.confirm("Voulez-vous vraiment quitter ce groupe ?")) {
+      setError('');
+      setActionLoading('leave-group');
+
+      try {
+        const response = await fetch(`http://localhost:3000/api/groups/${id}/members/${currentUserId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Impossible de quitter le groupe.');
+        }
+
+        navigate('/hub');
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setActionLoading(null);
+      }
+    }
+  };
+
   // --- RENDU EN ATTENTE ---
   if (isLoading) return <div className="p-8 text-center">Chargement du groupe...</div>;
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
@@ -187,10 +218,17 @@ export default function Dashboard() {
               {copySuccess ? 'Copié ! ✅' : 'Copier'}
             </button>
           </div>
-          {/* Bouton de suppression réservé à l'Admin */}
-          {myRole === 'ADMIN' && (
+          {isCreator ? (
             <button onClick={handleDeleteGroup} className="text-xs text-red-500 hover:text-red-700 underline mt-1">
               Supprimer le groupe définitivement
+            </button>
+          ) : (
+            <button
+              onClick={handleLeaveGroup}
+              disabled={actionLoading === 'leave-group'}
+              className="text-xs text-red-500 hover:text-red-700 underline mt-1 disabled:opacity-50"
+            >
+              {actionLoading === 'leave-group' ? 'Départ...' : 'Quitter le groupe'}
             </button>
           )}
         </div>

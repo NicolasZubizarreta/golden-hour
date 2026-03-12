@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Hub from './pages/Hub';
+import Profile from './pages/Profile';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
@@ -90,6 +91,14 @@ function App() {
           element={
             <PrivateRoute isHydratingUser={isHydratingUser}>
               <Hub />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/profile" 
+          element={
+            <PrivateRoute isHydratingUser={isHydratingUser}>
+              <Profile />
             </PrivateRoute>
           } 
         />
