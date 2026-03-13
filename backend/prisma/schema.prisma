@@ -15,7 +15,7 @@ model User {
   email     String        @unique
   password  String        
   name      String
-  avatar    String?       // Optionnel pour plus tard
+  avatar    String?       
   createdAt DateTime      @default(now())
 
   resetPasswordToken   String?       @unique
@@ -34,6 +34,7 @@ model Group {
   name       String
   type       GroupType     @default(FRIENDS)
   inviteCode String        @unique // Le code d'invitation
+  coverImage String?
   createdById Int
   createdAt  DateTime      @default(now())
 

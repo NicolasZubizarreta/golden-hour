@@ -1,4 +1,8 @@
 const prisma = require('../lib/prisma');
+const {
+  getCoverPublicPath,
+  removeUploadedFile,
+} = require('../utils/uploads');
 
 const generateInviteCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -151,7 +155,59 @@ exports.getGroupById = async (req, res) => {
   }
 };
 
-// --- 4. REJOINDRE UN GROUPE VIA CODE (POST /join) ---
+// --- 4. METTRE À JOUR LE FOND D'ÉCRAN DU GROUPE (POST /:id/cover) ---
+exports.uploadCover = async (req, res) => {
+  const groupId = parsePositiveInt(req.params.id);
+  const newCoverPath = getCoverPublicPath(req.file);
+
+  try {
+    if (groupId === null) {
+      await removeUploadedFile(newCoverPath);
+      return res.status(400).json({ message: "ID du groupe invalide." });
+    }
+
+    if (!newCoverPath) {
+      return res.status(400).json({ message: "Veuillez sélectionner une image de couverture." });
+    }
+
+    const existingGroup = await prisma.group.findUnique({
+      where: { id: groupId },
+      select: { id: true, coverImage: true },
+    });
+
+    if (!existingGroup) {
+      await removeUploadedFile(newCoverPath);
+      return res.status(404).json({ message: "Groupe introuvable." });
+    }
+
+    const updatedGroup = await prisma.group.update({
+      where: { id: groupId },
+      data: { coverImage: newCoverPath },
+      include: {
+        members: {
+          include: {
+            user: { select: { id: true, name: true, email: true, avatar: true } },
+          },
+        },
+      },
+    });
+
+    if (existingGroup.coverImage && existingGroup.coverImage !== newCoverPath) {
+      await removeUploadedFile(existingGroup.coverImage);
+    }
+
+    res.status(200).json({
+      message: "Image de couverture mise à jour avec succès.",
+      group: updatedGroup,
+    });
+  } catch (error) {
+    await removeUploadedFile(newCoverPath);
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur.", error: error.message });
+  }
+};
+
+// --- 5. REJOINDRE UN GROUPE VIA CODE (POST /join) ---
 exports.joinGroup = async (req, res) => {
   try {
     const { inviteCode } = req.body;
@@ -209,7 +265,7 @@ exports.joinGroup = async (req, res) => {
   }
 };
 
-// --- 5. MODIFIER LE RÔLE D'UN MEMBRE (PUT) ---
+// --- 6. MODIFIER LE RÔLE D'UN MEMBRE (PUT) ---
 exports.updateMemberRole = async (req, res) => {
   try {
     const groupId = parsePositiveInt(req.params.id);
@@ -269,7 +325,7 @@ exports.updateMemberRole = async (req, res) => {
   }
 };
 
-// --- 6. EXPULSER UN MEMBRE OU QUITTER LE GROUPE (DELETE) ---
+// --- 7. EXPULSER UN MEMBRE OU QUITTER LE GROUPE (DELETE) ---
 exports.removeMember = async (req, res) => {
   try {
     const groupId = parsePositiveInt(req.params.id);
@@ -283,7 +339,7 @@ exports.removeMember = async (req, res) => {
     const [group, requesterMember, targetMember] = await Promise.all([
       req.groupContext ? Promise.resolve(req.groupContext) : prisma.group.findUnique({
         where: { id: groupId },
-        select: { id: true, createdById: true },
+        select: { id: true, createdById: true, coverImage: true },
       }),
       req.requesterMembership ? Promise.resolve(req.requesterMembership) : prisma.groupMember.findUnique({
         where: { userId_groupId: { userId: requesterId, groupId: groupId } }
@@ -329,6 +385,10 @@ exports.removeMember = async (req, res) => {
       where: { userId_groupId: { userId: targetUserId, groupId: groupId } }
     });
 
+    if (isSelfAction && requesterId === group.createdById && group.coverImage) {
+      await removeUploadedFile(group.coverImage);
+    }
+
     const action = requesterId === targetUserId ? "Vous avez quitté le groupe." : "Membre expulsé avec succès.";
     res.status(200).json({ message: action });
   } catch (error) {
@@ -337,7 +397,7 @@ exports.removeMember = async (req, res) => {
   }
 };
 
-// --- 7. SUPPRIMER DÉFINITIVEMENT LE GROUPE (DELETE) ---
+// --- 8. SUPPRIMER DÉFINITIVEMENT LE GROUPE (DELETE) ---
 exports.deleteGroup = async (req, res) => {
   try {
     const groupId = parsePositiveInt(req.params.id);
@@ -348,7 +408,10 @@ exports.deleteGroup = async (req, res) => {
     }
 
     // Le checkRole s'assurera qu'on est bien ADMIN, mais on vérifie par précaution
-    const group = await prisma.group.findUnique({ where: { id: groupId } });
+    const group = await prisma.group.findUnique({
+      where: { id: groupId },
+      select: { id: true, coverImage: true },
+    });
     
     if (!group) {
       return res.status(404).json({ message: "Groupe introuvable." });
@@ -360,6 +423,10 @@ exports.deleteGroup = async (req, res) => {
       where: { id: groupId }
     });
 
+    if (group.coverImage) {
+      await removeUploadedFile(group.coverImage);
+    }
+
     res.status(200).json({ message: "Le groupe a été supprimé définitivement." });
   } catch (error) {
     console.error(error);
@@ -367,7 +434,7 @@ exports.deleteGroup = async (req, res) => {
   }
 };
 
-// --- 8. TRANSFÉRER LA PROPRIÉTÉ DU GROUPE (PUT) ---
+// --- 9. TRANSFÉRER LA PROPRIÉTÉ DU GROUPE (PUT) ---
 exports.transferOwnership = async (req, res) => {
   try {
     const groupId = parsePositiveInt(req.params.id);
