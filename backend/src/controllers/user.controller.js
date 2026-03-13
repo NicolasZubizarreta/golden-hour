@@ -1,5 +1,9 @@
 const prisma = require('../lib/prisma');
 const bcrypt = require('bcryptjs');
+const {
+  getAvatarPublicPath,
+  removeUploadedFile,
+} = require('../utils/uploads');
 
 const normalizeEmail = (email) => {
   if (typeof email !== 'string') {
@@ -107,7 +111,49 @@ exports.updatePassword = async (req, res) => {
   }
 };
 
-// --- 3. SUPPRIMER SON COMPTE (DELETE /me) ---
+// --- 3. METTRE À JOUR SON AVATAR (POST /me/avatar) ---
+exports.uploadAvatar = async (req, res) => {
+  const newAvatarPath = getAvatarPublicPath(req.file);
+
+  try {
+    const userId = req.user.id;
+
+    if (!newAvatarPath) {
+      return res.status(400).json({ message: "Veuillez sélectionner une image d'avatar." });
+    }
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, avatar: true },
+    });
+
+    if (!currentUser) {
+      await removeUploadedFile(newAvatarPath);
+      return res.status(404).json({ message: "Utilisateur introuvable." });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { avatar: newAvatarPath },
+      select: { id: true, name: true, email: true, avatar: true, createdAt: true },
+    });
+
+    if (currentUser.avatar && currentUser.avatar !== newAvatarPath) {
+      await removeUploadedFile(currentUser.avatar);
+    }
+
+    res.status(200).json({
+      message: "Avatar mis à jour avec succès.",
+      user: updatedUser,
+    });
+  } catch (error) {
+    await removeUploadedFile(newAvatarPath);
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur.", error: error.message });
+  }
+};
+
+// --- 4. SUPPRIMER SON COMPTE (DELETE /me) ---
 exports.deleteAccount = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -123,11 +169,20 @@ exports.deleteAccount = async (req, res) => {
       });
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatar: true },
+    });
+
     // Si on arrive ici, il n'est créateur de rien. On peut le supprimer.
     // Grâce au onDelete: Cascade sur GroupMember, il disparaîtra de tous les groupes où il était simple membre/éditeur.
     await prisma.user.delete({
       where: { id: userId }
     });
+
+    if (user?.avatar) {
+      await removeUploadedFile(user.avatar);
+    }
 
     res.status(200).json({ message: "Votre compte a été supprimé définitivement." });
   } catch (error) {
