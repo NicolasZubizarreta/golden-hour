@@ -74,24 +74,32 @@ enum Role {
 }
 
 // -----------------------------------------------------------------------------
-// 4. LES WIDGETS (Actifs ou inactifs)
+// 4. LES WIDGETS (Moteur de grille du Dashboard)
 // -----------------------------------------------------------------------------
 model Widget {
   id        Int        @id @default(autoincrement())
   groupId   Int
-  type      WidgetType
+  type      WidgetType @default(TEST)
+  size      WidgetSize @default(SQUARE)
+  position  Int
+  data      Json?
   isActive  Boolean    @default(true)
 
   group     Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
-  // Un groupe ne peut avoir qu'un seul widget d'un certain type activé
-  @@unique([groupId, type])
+  @@index([groupId, position])
 }
 
 enum WidgetType {
+  TEST
   NOTES
   MAP
   SPOTIFY
   BUDGET
   COUNTDOWN
+}
+
+enum WidgetSize {
+  SQUARE
+  RECT
 }
