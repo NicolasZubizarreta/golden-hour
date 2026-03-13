@@ -136,6 +136,9 @@ exports.getGroupById = async (req, res) => {
         }
       },
       include: {
+        widgets: {
+          orderBy: [{ position: 'asc' }, { id: 'asc' }],
+        },
         members: {
           include: {
             user: { select: { id: true, name: true, email: true, avatar: true } }
