@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import { getInitials, getMediaUrl } from '../utils/media';
 
 export default function Hub() {
   // On récupère l'utilisateur, le token et la fonction logout depuis notre store
@@ -94,7 +95,16 @@ export default function Hub() {
     <div className="min-h-screen bg-gray-50 p-8">
       {/* En-tête */}
       <div className="flex justify-between items-center mb-8 bg-white p-4 rounded-xl shadow-sm">
-        <h1 className="text-2xl font-bold">Bonjour, {user?.name || 'Aventurier'} 👋</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-600">
+            {user?.avatar ? (
+              <img src={getMediaUrl(user.avatar)} alt={`Avatar de ${user.name}`} className="w-full h-full object-cover" />
+            ) : (
+              getInitials(user?.name || 'Aventurier')
+            )}
+          </div>
+          <h1 className="text-2xl font-bold">Bonjour, {user?.name || 'Aventurier'} 👋</h1>
+        </div>
         
         <div className="flex items-center gap-4">
           <Link to="/profile" className="text-sm font-semibold text-gray-600 hover:text-gray-900 underline">
@@ -166,17 +176,29 @@ export default function Hub() {
               Vous n'êtes dans aucun groupe pour le moment.
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               {groups.map((group) => (
                 <Link 
                   key={group.id} 
                   to={`/group/${group.id}`} 
-                  className="bg-white p-6 rounded-xl shadow-sm border border-transparent hover:border-yellow-400 hover:shadow-md transition block"
+                  className="relative overflow-hidden rounded-xl shadow-sm border border-transparent hover:border-yellow-400 hover:shadow-md transition block aspect-square"
+                  style={group.coverImage ? {
+                    backgroundImage: `url(${getMediaUrl(group.coverImage)})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
+                  } : undefined}
                 >
-                  <div className="text-xs font-bold text-gray-400 uppercase mb-1">{group.type}</div>
-                  <h3 className="text-xl font-bold text-gray-800">{group.name}</h3>
-                  <div className="mt-4 text-sm text-gray-500 font-mono bg-gray-100 inline-block px-2 py-1 rounded">
-                    Code: {group.inviteCode}
+                  <div className={`h-full p-6 flex flex-col ${group.coverImage ? 'text-white' : 'bg-white text-gray-800'}`}>
+                    <div className={`text-xs font-bold uppercase ${group.coverImage ? 'text-white/80' : 'text-gray-400'}`}>{group.type}</div>
+                    <div className="flex-1 flex items-center justify-center">
+                      <h3 className={`text-xl font-bold text-center px-4 py-2 rounded ${group.coverImage ? 'bg-black/30 text-white' : 'bg-gray-100 text-gray-800'}`}>
+                        {group.name}
+                      </h3>
+                    </div>
+                    <div className={`text-sm font-mono inline-block px-2 py-1 rounded self-start ${group.coverImage ? 'bg-black/30 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                      Code: {group.inviteCode}
+                    </div>
                   </div>
                 </Link>
               ))}

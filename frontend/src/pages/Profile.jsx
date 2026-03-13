@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import { getInitials, getMediaUrl } from '../utils/media';
 
 export default function Profile() {
   const { user, token, setUser, logout } = useAuthStore();
@@ -11,6 +12,8 @@ export default function Profile() {
   const [email, setEmail] = useState('');
   const [infoMessage, setInfoMessage] = useState({ type: '', text: '' });
   const [isUpdatingInfo, setIsUpdatingInfo] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState({ type: '', text: '' });
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // --- ÉTATS : MOT DE PASSE ---
   const [currentPassword, setCurrentPassword] = useState('');
@@ -20,6 +23,7 @@ export default function Profile() {
 
   // --- ÉTATS : SUPPRESSION COMPTE ---
   const [isDeleting, setIsDeleting] = useState(false);
+  const avatarInputRef = useRef(null);
 
   // Remplir les champs avec les infos de l'utilisateur au chargement
   useEffect(() => {
@@ -28,6 +32,45 @@ export default function Profile() {
       setEmail(user.email || '');
     }
   }, [user]);
+
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setAvatarMessage({ type: '', text: '' });
+    setIsUploadingAvatar(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const response = await fetch('http://localhost:3000/api/users/me/avatar', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Erreur lors de l'envoi de l'avatar.");
+      }
+
+      setUser(data.user);
+      setAvatarMessage({ type: 'success', text: 'Avatar mis à jour avec succès.' });
+      setTimeout(() => setAvatarMessage({ type: '', text: '' }), 3000);
+    } catch (err) {
+      setAvatarMessage({ type: 'error', text: err.message });
+    } finally {
+      event.target.value = '';
+      setIsUploadingAvatar(false);
+    }
+  };
 
   // METTRE À JOUR LES INFOS (PUT /api/users/me)
   const handleUpdateInfo = async (e) => {
@@ -135,6 +178,41 @@ export default function Profile() {
           {/* BLOC 1 : INFOS PERSONNELLES */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h2 className="text-xl font-bold mb-4">Informations Personnelles</h2>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+              <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 border border-gray-200 flex items-center justify-center text-2xl font-bold text-gray-600">
+                {user?.avatar ? (
+                  <img src={getMediaUrl(user.avatar)} alt={`Avatar de ${user.name}`} className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(user?.name)
+                )}
+              </div>
+
+              <div>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarUpload}
+                />
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={isUploadingAvatar}
+                  className="bg-yellow-400 text-gray-900 font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition disabled:opacity-50"
+                >
+                  {isUploadingAvatar ? "Upload..." : "Changer l'avatar"}
+                </button>
+                <p className="text-xs text-gray-500 mt-2">Formats image uniquement, 5 MB maximum.</p>
+              </div>
+            </div>
+
+            {avatarMessage.text && (
+              <div className={`p-3 rounded mb-4 text-sm ${avatarMessage.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                {avatarMessage.text}
+              </div>
+            )}
             
             {infoMessage.text && (
               <div className={`p-3 rounded mb-4 text-sm ${infoMessage.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>

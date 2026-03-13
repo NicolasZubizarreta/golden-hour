@@ -1,0 +1,30 @@
+const API_BASE_URL = 'http://localhost:3000';
+
+export const getMediaUrl = (mediaPath) => {
+  if (!mediaPath || typeof mediaPath !== 'string') {
+    return null;
+  }
+
+  if (mediaPath.startsWith('http://') || mediaPath.startsWith('https://')) {
+    return mediaPath;
+  }
+
+  return `${API_BASE_URL}${mediaPath}`;
+};
+
+export const getInitials = (name) => {
+  if (!name || typeof name !== 'string') {
+    return '?';
+  }
+
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) {
+    return '?';
+  }
+
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0].toUpperCase())
+    .join('');
+};

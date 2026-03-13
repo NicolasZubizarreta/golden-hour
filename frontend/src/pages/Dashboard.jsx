@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import { getInitials, getMediaUrl } from '../utils/media';
 
 export default function Dashboard() {
   const { id } = useParams();
@@ -15,6 +16,7 @@ export default function Dashboard() {
   
   // état pour gérer l'ouverture de la modale des widgets
   const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
+  const coverInputRef = useRef(null);
 
   // --- REQUÊTES API EXISTANTES ---
   const fetchGroupDetails = async () => {
@@ -166,6 +168,43 @@ export default function Dashboard() {
     }
   };
 
+  const handleCoverUpload = async (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setError('');
+    setActionLoading('cover-upload');
+
+    try {
+      const formData = new FormData();
+      formData.append('cover', file);
+
+      const response = await fetch(`http://localhost:3000/api/groups/${id}/cover`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Impossible de mettre à jour le fond d’écran.');
+      }
+
+      setGroup(data.group || data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      event.target.value = '';
+      setActionLoading(null);
+    }
+  };
+
   // --- RENDU EN ATTENTE ---
   if (isLoading) return <div className="p-8 text-center">Chargement du groupe...</div>;
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
@@ -189,7 +228,15 @@ export default function Dashboard() {
   const canTransferOwnership = (member) => myRole === 'ADMIN' && member.role === 'EDITOR';
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 flex flex-col">
+    <div
+      className="min-h-screen p-8 flex flex-col"
+      style={group.coverImage ? {
+        backgroundImage: `url(${getMediaUrl(group.coverImage)})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      } : { backgroundColor: '#f9fafb' }}
+    >
       {/* HEADER AMÉLIORÉ */}
       <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between bg-white p-6 rounded-xl shadow-sm">
         <div>
@@ -206,6 +253,19 @@ export default function Dashboard() {
         </div>
 
         <div className="mt-4 md:mt-0 flex flex-col items-end gap-2">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-600">
+              {user?.avatar ? (
+                <img src={getMediaUrl(user.avatar)} alt={`Avatar de ${user.name}`} className="w-full h-full object-cover" />
+              ) : (
+                getInitials(user?.name)
+              )}
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-semibold text-gray-800">{user?.name || 'Utilisateur'}</p>
+              <p className="text-xs text-gray-500">{myRole}</p>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">Code :</span>
             <span className="text-xl font-mono font-bold bg-yellow-100 px-3 py-1 rounded text-yellow-800">
@@ -218,6 +278,25 @@ export default function Dashboard() {
               {copySuccess ? 'Copié ! ✅' : 'Copier'}
             </button>
           </div>
+          {canManageTeam && (
+            <>
+              <input
+                ref={coverInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleCoverUpload}
+              />
+              <button
+                type="button"
+                onClick={() => coverInputRef.current?.click()}
+                disabled={actionLoading === 'cover-upload'}
+                className="text-xs text-gray-700 hover:text-gray-900 underline mt-1 disabled:opacity-50"
+              >
+                {actionLoading === 'cover-upload' ? 'Upload cover...' : 'Changer le fond d’écran'}
+              </button>
+            </>
+          )}
           {isCreator ? (
             <button onClick={handleDeleteGroup} className="text-xs text-red-500 hover:text-red-700 underline mt-1">
               Supprimer le groupe définitivement
@@ -269,11 +348,27 @@ export default function Dashboard() {
                 
                 {/* Info Utilisateur */}
                 <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <span className="font-semibold text-sm text-gray-800 block">
-                      {member.user?.name || `Utilisateur #${member.userId}`}
-                    </span>
-                    {member.userId === user.id && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 flex-shrink-0">
+                      {member.user?.avatar ? (
+                        <img
+                          src={getMediaUrl(member.user.avatar)}
+                          alt={`Avatar de ${member.user?.name || `Utilisateur ${member.userId}`}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        getInitials(member.user?.name || `U${member.userId}`)
+                      )}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-sm text-gray-800 block">
+                        {member.user?.name || `Utilisateur #${member.userId}`}
+                      </span>
+                      {member.user?.email && (
+                        <span className="text-xs text-gray-500 block">{member.user.email}</span>
+                      )}
+                    </div>
+                    {member.userId === currentUserId && (
                       <span className="inline-block mt-1 text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">Moi</span>
                     )}
                   </div>
