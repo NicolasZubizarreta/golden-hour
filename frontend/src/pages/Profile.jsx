@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import api, { getApiErrorMessage } from '../api/axiosConfig';
 import { getInitials, getMediaUrl } from '../utils/media';
 
 export default function Profile() {
-  const { user, token, setUser, logout } = useAuthStore();
+  const { user, setUser, logout } = useAuthStore();
   const navigate = useNavigate();
 
   // --- ÉTATS : INFOS PERSONNELLES ---
@@ -47,25 +48,13 @@ export default function Profile() {
       const formData = new FormData();
       formData.append('avatar', file);
 
-      const response = await fetch('http://localhost:3000/api/users/me/avatar', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Erreur lors de l'envoi de l'avatar.");
-      }
+      const { data } = await api.post('/users/me/avatar', formData);
 
       setUser(data.user);
       setAvatarMessage({ type: 'success', text: 'Avatar mis à jour avec succès.' });
       setTimeout(() => setAvatarMessage({ type: '', text: '' }), 3000);
     } catch (err) {
-      setAvatarMessage({ type: 'error', text: err.message });
+      setAvatarMessage({ type: 'error', text: getApiErrorMessage(err, "Erreur lors de l'envoi de l'avatar.") });
     } finally {
       event.target.value = '';
       setIsUploadingAvatar(false);
@@ -79,18 +68,7 @@ export default function Profile() {
     setIsUpdatingInfo(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/users/me', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ name, email })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.message || 'Erreur lors de la mise à jour.');
+      const { data } = await api.put('/users/me', { name, email });
 
       // On met à jour le store Zustand avec les nouvelles infos (data.user)
       setUser(data.user);
@@ -99,7 +77,7 @@ export default function Profile() {
       // On efface le message de succès après 3s
       setTimeout(() => setInfoMessage({ type: '', text: '' }), 3000);
     } catch (err) {
-      setInfoMessage({ type: 'error', text: err.message });
+      setInfoMessage({ type: 'error', text: getApiErrorMessage(err, 'Erreur lors de la mise à jour.') });
     } finally {
       setIsUpdatingInfo(false);
     }
@@ -112,25 +90,14 @@ export default function Profile() {
     setIsUpdatingPassword(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/users/me/password', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ oldPassword: currentPassword, newPassword })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.message || 'Erreur lors du changement de mot de passe.');
+      await api.put('/users/me/password', { oldPassword: currentPassword, newPassword });
 
       setPasswordMessage({ type: 'success', text: 'Mot de passe modifié avec succès.' });
       setCurrentPassword('');
       setNewPassword('');
       setTimeout(() => setPasswordMessage({ type: '', text: '' }), 3000);
     } catch (err) {
-      setPasswordMessage({ type: 'error', text: err.message });
+      setPasswordMessage({ type: 'error', text: getApiErrorMessage(err, 'Erreur lors du changement de mot de passe.') });
     } finally {
       setIsUpdatingPassword(false);
     }
@@ -144,21 +111,13 @@ export default function Profile() {
 
     setIsDeleting(true);
     try {
-      const response = await fetch('http://localhost:3000/api/users/me', {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Erreur lors de la suppression.');
-      }
+      await api.delete('/users/me');
 
       // Si succès, on déconnecte l'utilisateur (qui efface le store et le localStorage)
       logout();
       navigate('/'); // Retour à l'accueil public
     } catch (err) {
-      alert(err.message);
+      alert(getApiErrorMessage(err, 'Erreur lors de la suppression.'));
       setIsDeleting(false);
     }
   };

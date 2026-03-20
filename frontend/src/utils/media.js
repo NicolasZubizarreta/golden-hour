@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3000';
+import { API_ORIGIN } from '../api/axiosConfig';
 
 export const getMediaUrl = (mediaPath) => {
   if (!mediaPath || typeof mediaPath !== 'string') {
@@ -9,7 +9,7 @@ export const getMediaUrl = (mediaPath) => {
     return mediaPath;
   }
 
-  return `${API_BASE_URL}${mediaPath}`;
+  return `${API_ORIGIN}${mediaPath}`;
 };
 
 export const getInitials = (name) => {

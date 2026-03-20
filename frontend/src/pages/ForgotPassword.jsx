@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import api, { getApiErrorMessage } from '../api/axiosConfig';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -14,24 +15,14 @@ export default function ForgotPassword() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Erreur lors de la demande.');
-      }
+      const { data } = await api.post('/auth/forgot-password', { email });
 
       // L'API renvoie toujours un succès par sécurité (même si l'email n'existe pas)
       setMessage(data.message);
       setEmail(''); // On vide le champ
 
     } catch (err) {
-      setError(err.message);
+      setError(getApiErrorMessage(err, 'Erreur lors de la demande.'));
     } finally {
       setIsLoading(false);
     }
