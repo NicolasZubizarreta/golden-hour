@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import api, { getApiErrorMessage } from '../api/axiosConfig';
 
 export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState('');
@@ -26,17 +27,7 @@ export default function ResetPassword() {
     }
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, newPassword }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Erreur lors de la réinitialisation.');
-      }
+      await api.post('/auth/reset-password', { token, newPassword });
 
       setMessage("Mot de passe modifié avec succès ! Vous allez être redirigé...");
       
@@ -44,7 +35,7 @@ export default function ResetPassword() {
       setTimeout(() => navigate('/login'), 2500);
 
     } catch (err) {
-      setError(err.message);
+      setError(getApiErrorMessage(err, 'Erreur lors de la réinitialisation.'));
     } finally {
       setIsLoading(false);
     }

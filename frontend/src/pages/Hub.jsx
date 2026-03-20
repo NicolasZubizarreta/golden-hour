@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import api, { getApiErrorMessage } from '../api/axiosConfig';
 import { getInitials, getMediaUrl } from '../utils/media';
 
 export default function Hub() {
@@ -18,16 +19,8 @@ export default function Hub() {
   // Fonction pour charger les groupes depuis l'API
   const fetchGroups = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/groups', {
-        method: 'GET',
-        // On envoie le Token au backend
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      const data = await response.json();
-      if (response.ok) {
-        setGroups(data.groups || data || []); 
-      }
+      const { data } = await api.get('/groups');
+      setGroups(data.groups || data || []);
     } catch (err) {
       console.error("Erreur lors de la récupération des groupes", err);
     }
@@ -44,24 +37,13 @@ export default function Hub() {
     setError('');
     
     try {
-      const response = await fetch('http://localhost:3000/api/groups', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ name: newGroupName, type: newGroupType })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.message || 'Erreur lors de la création');
+      await api.post('/groups', { name: newGroupName, type: newGroupType });
 
       // Si succès : on vide le champ et on recharge la liste des groupes
       setNewGroupName('');
       fetchGroups(); 
     } catch (err) {
-      setError(err.message);
+      setError(getApiErrorMessage(err, 'Erreur lors de la création'));
     }
   };
 
@@ -71,23 +53,12 @@ export default function Hub() {
     setError('');
     
     try {
-      const response = await fetch('http://localhost:3000/api/groups/join', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ inviteCode: joinCode }) 
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.message || 'Code invalide ou erreur.');
+      await api.post('/groups/join', { inviteCode: joinCode });
 
       setJoinCode('');
       fetchGroups();
     } catch (err) {
-      setError(err.message);
+      setError(getApiErrorMessage(err, 'Code invalide ou erreur.'));
     }
   };
 

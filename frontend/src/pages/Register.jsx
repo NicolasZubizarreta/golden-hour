@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import api, { getApiErrorMessage } from '../api/axiosConfig';
 
 export default function Register() {
   // On prépare nos variables d'état pour capturer les inputs
@@ -21,20 +22,7 @@ export default function Register() {
 
     try {
       // On appelle l'API Back-end
-      const response = await fetch('http://localhost:3000/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // Si le serveur renvoie une erreur (ex: email déjà pris)
-        throw new Error(data.message || "Erreur lors de l'inscription");
-      }
+      await api.post('/auth/register', { name, email, password });
 
       // L'utilisateur est créé. 
       // Le backend renvoie un message 201, donc on redirige vers le login.
@@ -42,7 +30,7 @@ export default function Register() {
       navigate('/login');
 
     } catch (err) {
-      setError(err.message);
+      setError(getApiErrorMessage(err, "Erreur lors de l'inscription"));
     } finally {
       setIsLoading(false);
     }

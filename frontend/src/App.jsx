@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import useAuthStore from './store/authStore';
+import api from './api/axiosConfig';
 
 // Import des pages
 import Home from './pages/Home';
@@ -42,16 +43,10 @@ function App() {
       setIsHydratingUser(true);
 
       try {
-        const response = await fetch('http://localhost:3000/api/auth/me', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const { data } = await api.get('/auth/me');
 
-        const data = await response.json();
-
-        if (!response.ok || !data.user) {
-          throw new Error(data.message || 'Session invalide.');
+        if (!data.user) {
+          throw new Error('Session invalide.');
         }
 
         if (!isCancelled) {

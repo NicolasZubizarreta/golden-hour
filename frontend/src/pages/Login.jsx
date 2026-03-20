@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import api, { getApiErrorMessage } from '../api/axiosConfig';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -18,17 +19,7 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Erreur lors de la connexion');
-      }
+      const { data } = await api.post('/auth/login', { email, password });
 
       // data contient : { message: "...", token: "eyJhb...", user: { id: 1, ... } }
       // On sauvegarde dans Zustand
@@ -38,7 +29,7 @@ export default function Login() {
       navigate('/hub');
 
     } catch (err) {
-      setError(err.message);
+      setError(getApiErrorMessage(err, 'Erreur lors de la connexion'));
     } finally {
       setIsLoading(false);
     }

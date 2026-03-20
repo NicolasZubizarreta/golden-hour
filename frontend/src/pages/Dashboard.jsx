@@ -1,23 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import api, { getApiErrorMessage } from '../api/axiosConfig';
 import { getInitials, getMediaUrl } from '../utils/media';
 import WidgetGrid from '../components/widgets/WidgetGrid';
-
-const parseApiResponse = async (response, fallbackMessage) => {
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(data.message || fallbackMessage);
-  }
-
-  return data;
-};
 
 export default function Dashboard() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
   const currentUserId = user?.id ?? null;
 
   const [group, setGroup] = useState(null);
@@ -30,20 +21,14 @@ export default function Dashboard() {
   const coverInputRef = useRef(null);
 
   const fetchGroupDetails = async () => {
-    const response = await fetch(`http://localhost:3000/api/groups/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await parseApiResponse(response, 'Erreur lors du chargement du groupe.');
+    const { data } = await api.get(`/groups/${id}`);
     const nextGroup = data.group || data;
     setGroup(nextGroup);
     return nextGroup;
   };
 
   const fetchWidgets = async () => {
-    const response = await fetch(`http://localhost:3000/api/groups/${id}/widgets`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await parseApiResponse(response, 'Erreur lors du chargement des widgets.');
+    const { data } = await api.get(`/groups/${id}/widgets`);
     setWidgets(data.widgets || []);
     return data.widgets || [];
   };
@@ -81,7 +66,7 @@ export default function Dashboard() {
     return () => {
       isCancelled = true;
     };
-  }, [id, token]);
+  }, [id]);
 
   const handleCopyCode = () => {
     if (!group?.inviteCode) {
@@ -98,19 +83,10 @@ export default function Dashboard() {
     setActionLoading(`role-${memberId}`);
 
     try {
-      const response = await fetch(`http://localhost:3000/api/groups/${id}/members/${memberId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ role: newRole }),
-      });
-
-      await parseApiResponse(response, 'Impossible de modifier le role.');
+      await api.put(`/groups/${id}/members/${memberId}`, { role: newRole });
       await fetchGroupDetails();
     } catch (err) {
-      setError(err.message);
+      setError(getApiErrorMessage(err, 'Impossible de modifier le role.'));
     } finally {
       setActionLoading(null);
     }
@@ -125,15 +101,10 @@ export default function Dashboard() {
     setActionLoading(`kick-${memberId}`);
 
     try {
-      const response = await fetch(`http://localhost:3000/api/groups/${id}/members/${memberId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      await parseApiResponse(response, 'Impossible d exclure ce membre.');
+      await api.delete(`/groups/${id}/members/${memberId}`);
       await fetchGroupDetails();
     } catch (err) {
-      setError(err.message);
+      setError(getApiErrorMessage(err, 'Impossible d exclure ce membre.'));
     } finally {
       setActionLoading(null);
     }
@@ -147,15 +118,10 @@ export default function Dashboard() {
     setError('');
 
     try {
-      const response = await fetch(`http://localhost:3000/api/groups/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      await parseApiResponse(response, 'Impossible de supprimer le groupe.');
+      await api.delete(`/groups/${id}`);
       navigate('/hub');
     } catch (err) {
-      setError(err.message);
+      setError(getApiErrorMessage(err, 'Impossible de supprimer le groupe.'));
     }
   };
 
@@ -168,19 +134,10 @@ export default function Dashboard() {
     setActionLoading(`transfer-${newOwnerId}`);
 
     try {
-      const response = await fetch(`http://localhost:3000/api/groups/${id}/transfer`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ newAdminId: newOwnerId }),
-      });
-
-      await parseApiResponse(response, 'Impossible de transferer la propriete.');
+      await api.put(`/groups/${id}/transfer`, { newAdminId: newOwnerId });
       await fetchGroupDetails();
     } catch (err) {
-      setError(err.message);
+      setError(getApiErrorMessage(err, 'Impossible de transferer la propriete.'));
     } finally {
       setActionLoading(null);
     }
@@ -200,15 +157,10 @@ export default function Dashboard() {
     setActionLoading('leave-group');
 
     try {
-      const response = await fetch(`http://localhost:3000/api/groups/${id}/members/${currentUserId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      await parseApiResponse(response, 'Impossible de quitter le groupe.');
+      await api.delete(`/groups/${id}/members/${currentUserId}`);
       navigate('/hub');
     } catch (err) {
-      setError(err.message);
+      setError(getApiErrorMessage(err, 'Impossible de quitter le groupe.'));
     } finally {
       setActionLoading(null);
     }
@@ -228,18 +180,10 @@ export default function Dashboard() {
       const formData = new FormData();
       formData.append('cover', file);
 
-      const response = await fetch(`http://localhost:3000/api/groups/${id}/cover`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      const data = await parseApiResponse(response, 'Impossible de mettre a jour le fond d ecran.');
+      const { data } = await api.post(`/groups/${id}/cover`, formData);
       setGroup(data.group || data);
     } catch (err) {
-      setError(err.message);
+      setError(getApiErrorMessage(err, 'Impossible de mettre a jour le fond d ecran.'));
     } finally {
       event.target.value = '';
       setActionLoading(null);
@@ -251,23 +195,14 @@ export default function Dashboard() {
     setActionLoading(`add-widget-${size}`);
 
     try {
-      const response = await fetch(`http://localhost:3000/api/groups/${id}/widgets`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          type: 'TEST',
-          size,
-        }),
+      const { data } = await api.post(`/groups/${id}/widgets`, {
+        type: 'TEST',
+        size,
       });
-
-      const data = await parseApiResponse(response, 'Impossible d ajouter le widget.');
       setWidgets(data.widgets || []);
       setIsWidgetModalOpen(false);
     } catch (err) {
-      setError(err.message);
+      setError(getApiErrorMessage(err, 'Impossible d ajouter le widget.'));
     } finally {
       setActionLoading(null);
     }
@@ -282,17 +217,10 @@ export default function Dashboard() {
     setActionLoading(`delete-widget-${widgetId}`);
 
     try {
-      const response = await fetch(`http://localhost:3000/api/groups/${id}/widgets/${widgetId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await parseApiResponse(response, 'Impossible de supprimer le widget.');
+      const { data } = await api.delete(`/groups/${id}/widgets/${widgetId}`);
       setWidgets(data.widgets || []);
     } catch (err) {
-      setError(err.message);
+      setError(getApiErrorMessage(err, 'Impossible de supprimer le widget.'));
     } finally {
       setActionLoading(null);
     }
@@ -304,25 +232,16 @@ export default function Dashboard() {
     setActionLoading('widgets-reorder');
 
     try {
-      const response = await fetch(`http://localhost:3000/api/groups/${id}/widgets/reorder`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          widgets: nextWidgets.map((widget, index) => ({
-            id: widget.id,
-            position: index,
-          })),
-        }),
+      const { data } = await api.put(`/groups/${id}/widgets/reorder`, {
+        widgets: nextWidgets.map((widget, index) => ({
+          id: widget.id,
+          position: index,
+        })),
       });
-
-      const data = await parseApiResponse(response, 'Impossible de sauvegarder le nouvel ordre.');
       setWidgets(data.widgets || nextWidgets);
     } catch (err) {
       setWidgets(previousWidgets);
-      setError(err.message);
+      setError(getApiErrorMessage(err, 'Impossible de sauvegarder le nouvel ordre.'));
     } finally {
       setActionLoading(null);
     }
