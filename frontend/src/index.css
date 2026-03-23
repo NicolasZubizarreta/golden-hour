@@ -38,4 +38,8 @@
   h6 {
     @apply font-outfit;
   }
+
+  p {
+    font-size: 18px;
+  }
 }
