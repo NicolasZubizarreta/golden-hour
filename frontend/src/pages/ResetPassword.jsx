@@ -1,14 +1,16 @@
 import { useState } from 'react';
+/* FUSION DES IMPORTS : Link, useNavigate et useSearchParams ensemble */
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api, { getApiErrorMessage } from '../api/axiosConfig';
 
 export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Outil pour lire l'URL (?token=...)
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token'); 
 
@@ -18,22 +20,22 @@ export default function ResetPassword() {
     e.preventDefault();
     setError('');
     setMessage('');
-    setIsLoading(true);
 
-    if (!token) {
-      setError("Aucun jeton de sécurité trouvé dans l'URL.");
-      setIsLoading(false);
+    if (newPassword !== confirmPassword) {
+      setError("Les mots de passe ne correspondent pas.");
       return;
     }
 
+    if (!token) {
+      setError("Aucun jeton de sécurité trouvé dans l'URL.");
+      return;
+    }
+
+    setIsLoading(true);
     try {
       await api.post('/auth/reset-password', { token, newPassword });
-
       setMessage("Mot de passe modifié avec succès ! Vous allez être redirigé...");
-      
-      // Redirection automatique vers la connexion après 2.5 secondes
       setTimeout(() => navigate('/login'), 2500);
-
     } catch (err) {
       setError(getApiErrorMessage(err, 'Erreur lors de la réinitialisation.'));
     } finally {
@@ -42,43 +44,92 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
-      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-md">
-        <h2 className="text-2xl font-bold text-center mb-6">Nouveau mot de passe</h2>
+    <div className="relative min-h-screen bg-gradient-to-b from-golden-bg from-80% to-[#faeec5] font-inter text-golden-text flex flex-col">
+      
+      {/* 1. LE HEADER (ABSOLUTE) */}
+      <header className="absolute top-0 left-0 w-full z-20">
+        <div className="container-golden py-[32px] flex justify-between items-center">
+          
+          {/* Logo + Texte redirigeant vers la Home */}
+          <Link to="/" className="flex items-center gap-3 hover:scale-105 transition-transform">
+            <img 
+              src="/LogoGoldenHour.png" 
+              alt="Logo Golden Hour" 
+              className="w-10 h-10 object-contain rounded-full drop-shadow-[0_0_5px_rgba(0,0,0,0.25)]" 
+            />
+            <span className="font-outfit font-extrabold text-xl tracking-wide uppercase">Golden Hour</span>
+          </Link>
+
+          <Link to="/login" className="px-6 py-2 bg-gray-100 text-golden-text rounded-full font-semibold hover:bg-gray-200 transition text-sm shadow-halo">
+            Connexion
+          </Link>
+        </div>
+      </header>
+
+      {/* 2. LE CONTENU (FORMULAIRE) : Centré */}
+      <main className="container-golden flex-1 flex flex-col justify-center items-center">
         
-        {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm text-center">{error}</div>}
-        {message && <div className="bg-green-100 text-green-700 p-3 rounded mb-4 text-sm text-center">{message}</div>}
+        <div className="w-full max-w-[480px] bg-golden-card p-10 md:p-12 rounded-golden shadow-halo z-10">
+          <h2 className="text-3xl font-outfit font-black mb-2">Réinitialisation</h2>
+          <p className="text-golden-muted mb-8 text-sm">Créez votre nouveau mot de passe</p>
+          
+          {error && <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-2xl mb-6 text-sm text-center font-medium">{error}</div>}
+          {message && <div className="bg-green-50 border border-green-200 text-green-600 p-3 rounded-2xl mb-6 text-sm text-center font-medium">{message}</div>}
 
-        {!message && (
-          <form className="space-y-4" onSubmit={handleReset}>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nouveau mot de passe</label>
-              <input 
-                type="password" 
-                required
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                placeholder="6 caractères minimum"
-              />
-            </div>
+          {!message && (
+            <form className="space-y-6" onSubmit={handleReset}>
+              
+              {/* NOUVEAU MOT DE PASSE */}
+              <div>
+                <label className="block text-xs font-bold text-golden-text uppercase tracking-wider mb-2">Nouveau mot de passe</label>
+                <div className="relative flex items-center">
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full bg-golden-input shadow-creuse rounded-full px-5 py-3.5 pr-12 text-golden-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-golden-primary transition-all text-lg tracking-widest"
+                    placeholder="••••••••"
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                  </button>
+                </div>
+              </div>
 
-            <button 
-              type="submit" 
-              disabled={isLoading}
-              className={`w-full font-bold py-2 rounded-lg transition mt-4 ${
-                isLoading ? 'bg-yellow-300 text-gray-600 cursor-not-allowed' : 'bg-yellow-400 text-gray-900 hover:bg-yellow-500'
-              }`}
-            >
-              {isLoading ? 'Modification...' : 'Valider'}
-            </button>
-          </form>
-        )}
+              {/* CONFIRMER LE MOT DE PASSE */}
+              <div>
+                <label className="block text-xs font-bold text-golden-text uppercase tracking-wider mb-2">Confirmer le mot de passe</label>
+                <div className="relative flex items-center">
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full bg-golden-input shadow-creuse rounded-full px-5 py-3.5 pr-12 text-golden-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-golden-primary transition-all text-lg tracking-widest"
+                    placeholder="••••••••"
+                  />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                  </button>
+                </div>
+              </div>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
-          <Link to="/login" className="text-gray-500 hover:underline">Retour à la connexion</Link>
-        </p>
-      </div>
+              {/* BOUTON SUBMIT */}
+              <button 
+                type="submit" 
+                disabled={isLoading}
+                className={`w-full flex justify-center items-center gap-2 font-inter font-bold text-lg py-4 rounded-full transition-transform mt-2 shadow-halo tracking-wide ${
+                  isLoading ? 'bg-yellow-300 text-yellow-700 cursor-not-allowed' : 'bg-golden-primary text-golden-text hover:scale-[1.02]'
+                }`}
+              >
+                {isLoading ? 'Modification...' : 'Changer de mot de passe'}
+                {!isLoading && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>}
+              </button>
+            </form>
+          )}
+        </div>
+      </main>
     </div>
   );
 }
