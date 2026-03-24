@@ -18,6 +18,12 @@
   --shadow-creuse: inset 0px 0px 5px rgba(0, 0, 0, 0.15);
 }
 
+@layer components {
+  .container-golden {
+    @apply w-full max-w-[1440px] mx-auto px-6 md:px-[48px];
+  }
+}
+
 @layer base {
   html,
   body,
