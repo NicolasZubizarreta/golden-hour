@@ -1,17 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import api, { getApiErrorMessage } from '../api/axiosConfig';
 import { getInitials, getMediaUrl } from '../utils/media';
 
+const normalizeSearchValue = (value) => (
+  typeof value === 'string'
+    ? value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    : ''
+);
+
 export default function Hub() {
   const { user, token, logout } = useAuthStore();
-  const navigate = useNavigate();
 
   const [groups, setGroups] = useState([]);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupType, setNewGroupType] = useState('FRIENDS');
   const [joinCode, setJoinCode] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState('');
 
   // États pour les Pop-ups
@@ -24,6 +30,7 @@ export default function Hub() {
       setGroups(data.groups || data || []);
     } catch (err) {
       console.error("Erreur lors de la récupération des groupes", err);
+      setError(getApiErrorMessage(err, 'Impossible de charger vos groupes.'));
     }
   };
 
@@ -57,6 +64,11 @@ export default function Hub() {
     }
   };
 
+  const normalizedSearch = normalizeSearchValue(searchQuery);
+  const filteredGroups = normalizedSearch
+    ? groups.filter((group) => normalizeSearchValue(group.name).includes(normalizedSearch))
+    : groups;
+
   return (
     <div className="min-h-screen flex flex-col bg-golden-bg font-inter text-golden-text">
       
@@ -88,8 +100,22 @@ export default function Hub() {
             <input 
               type="text" 
               placeholder="Rechercher un groupe..." 
-              className="w-full bg-golden-input shadow-creuse rounded-full py-3.5 pl-14 pr-5 text-sm font-medium text-golden-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-golden-primary transition-all"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              className="w-full bg-golden-input shadow-creuse rounded-full py-3.5 pl-14 pr-14 text-sm font-medium text-golden-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-golden-primary transition-all"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-700 transition cursor-pointer"
+                aria-label="Vider la recherche"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            )}
           </div>
           
           {/* Actions (Déconnexion & Profil) */}
@@ -140,7 +166,7 @@ export default function Hub() {
           </button>
 
           {/* CARTES : GROUPES EXISTANTS */}
-          {groups.map((group) => (
+          {filteredGroups.map((group) => (
             <Link 
               key={group.id} 
               to={`/group/${group.id}`} 
@@ -175,6 +201,20 @@ export default function Hub() {
               </div>
             </Link>
           ))}
+
+          {groups.length > 0 && filteredGroups.length === 0 && (
+            <div className="md:col-span-2 lg:col-span-1 bg-white rounded-[2.5rem] p-8 shadow-halo flex flex-col items-center justify-center text-center aspect-[4/3]">
+              <div className="w-16 h-16 bg-golden-input rounded-full flex items-center justify-center mb-5 text-golden-muted">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </div>
+              <h3 className="font-outfit font-black text-2xl text-gray-900 mb-2">Aucun groupe trouvé</h3>
+              <p className="text-sm text-golden-muted font-medium">
+                Aucun groupe ne correspond à "{searchQuery}".
+              </p>
+            </div>
+          )}
         </div>
       </main>
 

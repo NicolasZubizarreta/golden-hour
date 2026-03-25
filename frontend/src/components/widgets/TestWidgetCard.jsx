@@ -35,13 +35,13 @@ export default function TestWidgetCard({
 
   return (
     <article
-      className={`relative h-full overflow-hidden rounded-[28px] border border-white/25 p-4 shadow-lg transition ${isDragging ? 'scale-[1.02] shadow-2xl' : 'shadow-black/10'}`}
+      className={`relative w-full h-full overflow-hidden rounded-[2.5rem] border border-white/25 p-6 shadow-halo transition-all duration-200 ${isDragging ? 'scale-[1.02] shadow-2xl z-50' : ''}`}
       style={{
         background: content.background,
         color: content.text,
       }}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.28),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.2),transparent_35%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.28),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.2),transparent_35%)] pointer-events-none" />
 
       <div className="relative z-10 flex h-full flex-col">
         <div className="flex items-start justify-between gap-3">
@@ -54,12 +54,12 @@ export default function TestWidgetCard({
               {canDrag && (
                 <button
                   type="button"
-                  className="rounded-full bg-black/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] backdrop-blur-sm cursor-grab active:cursor-grabbing"
+                  className="rounded-full bg-black/10 p-2 backdrop-blur-sm cursor-grab active:cursor-grabbing hover:bg-black/20 transition"
                   aria-label="Deplacer le widget"
                   {...dragAttributes}
                   {...dragListeners}
                 >
-                  Drag
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8h16M4 16h16"></path></svg>
                 </button>
               )}
               <button
@@ -67,9 +67,10 @@ export default function TestWidgetCard({
                 onClick={onDelete}
                 onPointerDown={(event) => event.stopPropagation()}
                 disabled={isDeleting}
-                className="rounded-full bg-black/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] backdrop-blur-sm disabled:opacity-50"
+                className="rounded-full bg-black/10 p-2 backdrop-blur-sm disabled:opacity-50 hover:bg-red-500/80 hover:text-white transition cursor-pointer"
+                aria-label="Supprimer le widget"
               >
-                {isDeleting ? '...' : 'Delete'}
+                {isDeleting ? '...' : <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>}
               </button>
             </div>
           )}
@@ -77,8 +78,8 @@ export default function TestWidgetCard({
 
         <div className="mt-auto">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] opacity-75">{content.badge}</p>
-          <h3 className="mt-2 text-2xl font-semibold leading-tight">{content.title}</h3>
-          <p className="mt-2 max-w-[16rem] text-sm opacity-85">{content.subtitle}</p>
+          <h3 className="mt-2 text-2xl font-black leading-tight tracking-wide">{content.title}</h3>
+          <p className="mt-2 max-w-[16rem] text-sm opacity-85 font-medium">{content.subtitle}</p>
         </div>
       </div>
     </article>

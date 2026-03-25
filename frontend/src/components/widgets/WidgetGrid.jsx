@@ -27,6 +27,7 @@ export default function WidgetGrid({
   deletingWidgetId,
   onDeleteWidget,
   onReorderWidgets,
+  children // <-- AJOUT DU CHILDREN ICI
 }) {
   const canDrag = canManageWidgets && !isReordering;
   const [activeWidgetId, setActiveWidgetId] = useState(null);
@@ -34,15 +35,10 @@ export default function WidgetGrid({
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
+      activationConstraint: { distance: 8 },
     }),
     useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 180,
-        tolerance: 6,
-      },
+      activationConstraint: { delay: 180, tolerance: 6 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -54,12 +50,8 @@ export default function WidgetGrid({
     setActiveWidgetId(nextActiveId);
 
     const initialRect = event.active.rect.current.initial;
-
     if (initialRect?.width && initialRect?.height) {
-      setActiveWidgetRect({
-        width: initialRect.width,
-        height: initialRect.height,
-      });
+      setActiveWidgetRect({ width: initialRect.width, height: initialRect.height });
     } else {
       setActiveWidgetRect(null);
     }
@@ -74,22 +66,15 @@ export default function WidgetGrid({
     setActiveWidgetId(null);
     setActiveWidgetRect(null);
 
-    if (!canDrag) {
-      return;
-    }
+    if (!canDrag) return;
 
     const { active, over } = event;
-
-    if (!active || !over || active.id === over.id) {
-      return;
-    }
+    if (!active || !over || active.id === over.id) return;
 
     const oldIndex = widgets.findIndex((widget) => widget.id === active.id);
     const newIndex = widgets.findIndex((widget) => widget.id === over.id);
 
-    if (oldIndex === -1 || newIndex === -1) {
-      return;
-    }
+    if (oldIndex === -1 || newIndex === -1) return;
 
     const reorderedWidgets = arrayMove(widgets, oldIndex, newIndex).map((widget, index) => ({
       ...widget,
@@ -101,18 +86,15 @@ export default function WidgetGrid({
 
   const collisionDetection = (args) => {
     const pointerHits = pointerWithin(args);
-
-    if (pointerHits.length > 0) {
-      return pointerHits;
-    }
-
+    if (pointerHits.length > 0) return pointerHits;
     return closestCenter(args);
   };
 
   const activeWidget = widgets.find((widget) => widget.id === activeWidgetId) || null;
 
+  // LA GRILLE UNIQUE : 2 colonnes avec 32px d'écart (gap-8)
   const gridContent = (
-    <div className="grid grid-cols-2 gap-4 auto-rows-[180px] md:auto-rows-[220px]">
+    <div className="grid grid-cols-2 gap-8 w-full">
       {widgets.map((widget) => (
         <SortableWidget
           key={widget.id}
@@ -124,22 +106,18 @@ export default function WidgetGrid({
           onDelete={onDeleteWidget}
         />
       ))}
+      {/* LE BOUTON ADD WIDGET VA SE PLACER ICI, DANS LE FLUX NATUREL */}
+      {children}
     </div>
   );
 
-  if (!canDrag) {
-    return gridContent;
-  }
+  if (!canDrag) return gridContent;
 
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={collisionDetection}
-      measuring={{
-        droppable: {
-          strategy: MeasuringStrategy.Always,
-        },
-      }}
+      measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
       onDragStart={handleDragStart}
       onDragCancel={handleDragCancel}
       onDragEnd={handleDragEnd}
@@ -150,20 +128,10 @@ export default function WidgetGrid({
       <DragOverlay adjustScale={false} dropAnimation={null}>
         {activeWidget ? (
           <div
-            style={activeWidgetRect ? {
-              width: activeWidgetRect.width,
-              height: activeWidgetRect.height,
-            } : undefined}
+            style={activeWidgetRect ? { width: activeWidgetRect.width, height: activeWidgetRect.height } : undefined}
             className={activeWidget.size === 'RECT' ? 'max-w-none' : ''}
           >
-            <TestWidgetCard
-              widget={activeWidget}
-              canManageWidgets={false}
-              canDrag={false}
-              isDragging
-              isDeleting={false}
-              onDelete={() => {}}
-            />
+            <TestWidgetCard widget={activeWidget} canManageWidgets={false} canDrag={false} isDragging isDeleting={false} onDelete={() => {}} />
           </div>
         ) : null}
       </DragOverlay>
