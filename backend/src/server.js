@@ -71,4 +71,4 @@ app.get('/api/health', async (req, res) => {
 
 // Lancement du serveur
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Serveur sur http://localhost:${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Serveur réseau ouvert sur le port ${PORT}`));

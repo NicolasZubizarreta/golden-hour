@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import api, { getApiErrorMessage } from '../api/axiosConfig';
 import { getInitials, getMediaUrl } from '../utils/media';
 import WidgetGrid from '../components/widgets/WidgetGrid';
+import GroupMembersPanel from '../components/groups/GroupMembersPanel';
 
 export default function Dashboard() {
   const { id } = useParams();
@@ -17,6 +18,8 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
+  const [isEditingGroupName, setIsEditingGroupName] = useState(false);
+  const [groupNameInput, setGroupNameInput] = useState('');
   
   // États UI
   const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
@@ -30,6 +33,7 @@ export default function Dashboard() {
     const { data } = await api.get(`/groups/${id}`);
     const nextGroup = data.group || data;
     setGroup(nextGroup);
+    setGroupNameInput(nextGroup?.name || '');
     return nextGroup;
   };
 
@@ -72,6 +76,47 @@ export default function Dashboard() {
     navigator.clipboard.writeText(group.inviteCode);
     setCopySuccess(true);
     setTimeout(() => setCopySuccess(false), 2000);
+  };
+
+  const handleStartRenameGroup = () => {
+    setGroupNameInput(group?.name || '');
+    setIsEditingGroupName(true);
+    setError('');
+  };
+
+  const handleCancelRenameGroup = () => {
+    setGroupNameInput(group?.name || '');
+    setIsEditingGroupName(false);
+  };
+
+  const handleRenameGroup = async (event) => {
+    event.preventDefault();
+
+    const currentName = group?.name || '';
+    const trimmedName = groupNameInput.trim();
+
+    if (!trimmedName) {
+      setError('Le nom du groupe est obligatoire.');
+      return;
+    }
+
+    if (trimmedName === currentName) {
+      setIsEditingGroupName(false);
+      return;
+    }
+
+    setError('');
+    setActionLoading('rename-group');
+    try {
+      const { data } = await api.put(`/groups/${id}`, { name: trimmedName });
+      setGroup((previousGroup) => previousGroup ? { ...previousGroup, ...data.group, name: data.group.name } : previousGroup);
+      setGroupNameInput(data.group.name);
+      setIsEditingGroupName(false);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Impossible de renommer le groupe.'));
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleChangeRole = async (memberId, newRole) => {
@@ -243,27 +288,81 @@ export default function Dashboard() {
         {/* =========================================
             TOP BAR
         ========================================= */}
-        <header className="w-full relative z-50 bg-white/60 backdrop-blur-[10px] rounded-[2rem] py-[16px] px-[32px] flex flex-col md:flex-row justify-between items-center shadow-halo mb-8">
+        <header className="w-full relative z-50 bg-white/60 backdrop-blur-[10px] rounded-golden py-[16px] px-[20px] md:px-[32px] flex items-center justify-between gap-4 shadow-halo mb-8">
           
-          <Link to="/hub" className="flex items-center gap-4 hover:scale-[1.02] transition-transform cursor-pointer">
-            <img src="/LogoGoldenHour.png" alt="Logo" className="w-10 h-10 object-contain drop-shadow-[0_0_5px_rgba(0,0,0,0.25)]" />
-            <h1 className="font-outfit font-black text-xl text-gray-900 drop-shadow-sm">{group.name}</h1>
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <Link to="/hub" className="shrink-0 hover:scale-[1.02] transition-transform cursor-pointer">
+              <img src="/LogoGoldenHour.png" alt="Logo" className="w-10 h-10 object-contain rounded-golden drop-shadow-[0_0_5px_rgba(0,0,0,0.25)]" />
+            </Link>
+            <div className="min-w-0 flex-1">
+              {isEditingGroupName ? (
+                <form onSubmit={handleRenameGroup} className="flex min-w-0 items-center gap-2">
+                  <input
+                    type="text"
+                    value={groupNameInput}
+                    onChange={(event) => setGroupNameInput(event.target.value)}
+                    className="min-w-0 w-full bg-white/80 shadow-creuse rounded-golden px-4 py-2 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-golden-primary"
+                    placeholder="Nom du groupe"
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    disabled={actionLoading === 'rename-group'}
+                    className="shrink-0 text-gray-700 hover:text-gray-900 transition hover:scale-110 cursor-pointer disabled:cursor-not-allowed"
+                    aria-label="Valider le nouveau nom"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path></svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelRenameGroup}
+                    className="shrink-0 text-gray-500 hover:text-gray-800 transition hover:scale-110 cursor-pointer"
+                    aria-label="Annuler le renommage"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                  </button>
+                </form>
+              ) : (
+                <div className="flex min-w-0 items-center gap-2">
+                  <h1 className="truncate font-outfit font-black text-xl text-gray-900">{group.name}</h1>
+                  {canManageTeam && (
+                    <button
+                      type="button"
+                      onClick={handleStartRenameGroup}
+                      disabled={actionLoading === 'rename-group'}
+                      className="hidden min-[1030px]:block shrink-0 text-gray-700 hover:text-gray-900 transition hover:scale-110 cursor-pointer disabled:cursor-not-allowed"
+                      aria-label="Modifier le nom du groupe"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M16.586 3.586a2 2 0 112.828 2.828L11 14.828 7 15l.172-4L16.586 3.586z"></path></svg>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <Link
+            to={`/group/${id}/mobile-settings`}
+            className="flex min-[1030px]:hidden shrink-0 items-center justify-center text-gray-700 hover:text-gray-900 transition hover:scale-110 cursor-pointer"
+            aria-label="Ouvrir les paramètres du groupe"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
           </Link>
 
-          <div className="flex items-center gap-4 mt-4 md:mt-0 relative">
+          <div className="hidden min-[1030px]:flex items-center gap-4 relative">
             
-            {/* ZONE CODE INCRUSTÉ : shadow-creuse sur le container, shadow-halo sur le bouton */}
-            <div className="flex items-center color-golden-input shadow-creuse rounded-full pl-5">
+            {/* ZONE CODE INCRUSTÉE : shadow-creuse sur le container, shadow-halo sur le bouton */}
+            <div className="flex items-center bg-golden-input shadow-creuse rounded-golden pl-5">
               <span className="font-mono font-bold text-sm text-gray-800 pr-5 tracking-widest">{group.inviteCode}</span>
               <button 
                 onClick={handleCopyCode} 
-                className="bg-white rounded-full px-6 py-2 text-xs font-extrabold text-gray-900 shadow-halo hover:bg-gray-50 transition cursor-pointer"
+                className="bg-white rounded-golden px-6 py-2 text-xs font-extrabold text-gray-900 shadow-halo hover:bg-gray-50 transition cursor-pointer"
               >
                 {copySuccess ? 'Copié !' : 'Copier'}
               </button>
             </div>
 
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 border-2 border-white shadow-halo">
+            <div className="w-10 h-10 rounded-golden overflow-hidden bg-gray-200 border-2 border-white shadow-halo">
               {user?.avatar ? <img src={getMediaUrl(user.avatar)} alt="Avatar" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-sm font-bold">{getInitials(user?.name)}</div>}
             </div>
 
@@ -273,7 +372,7 @@ export default function Dashboard() {
               </button>
 
               {isSettingsOpen && (
-                <div className="absolute right-0 top-10 w-64 bg-white rounded-[2rem] shadow-halo py-4 z-50 flex flex-col font-bold text-xs uppercase tracking-widest text-center border border-gray-100">
+                <div className="absolute right-0 top-10 w-64 bg-white rounded-golden shadow-halo py-4 z-50 flex flex-col font-bold text-xs uppercase tracking-widest text-center border border-gray-100">
                   <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
                   {canManageTeam && (
                     <button onClick={() => coverInputRef.current?.click()} className="py-3 text-gray-700 hover:text-black transition cursor-pointer">Changer de fond</button>
@@ -293,9 +392,9 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {error && <div className="w-full bg-red-100 text-red-700 p-4 rounded-2xl mb-6 text-sm font-bold text-center shadow-sm">{error}</div>}
+        {error && <div className="w-full bg-red-100 text-red-700 p-4 rounded-golden mb-6 text-sm font-bold text-center shadow-halo">{error}</div>}
 
-        <div className="flex flex-col lg:flex-row gap-8 flex-1 items-stretch">
+        <div className="flex flex-col min-[1030px]:flex-row gap-8 flex-1 items-stretch">
           
           {/* =========================================
               ZONE WIDGETS
@@ -312,12 +411,14 @@ export default function Dashboard() {
               {canManageTeam && (
                 <button
                   onClick={() => setIsWidgetModalOpen(true)}
-                  className="col-span-1 aspect-square bg-white/60 backdrop-blur-[10px] border-[3px] border-dashed border-gray-300 rounded-[2.5rem] flex flex-col items-center justify-center p-8 hover:bg-white transition group shadow-halo cursor-pointer w-full"
+                  className="col-span-1 aspect-square self-start overflow-hidden bg-white/60 backdrop-blur-[10px] border-[3px] border-dashed border-gray-300 rounded-golden flex flex-col items-center justify-center p-4 sm:p-8 hover:bg-white transition group shadow-halo cursor-pointer w-full min-h-0"
                 >
-                  <div className="w-14 h-14 bg-gray-400 rounded-full flex items-center justify-center text-white text-3xl font-light group-hover:scale-110 transition-transform mb-4 shadow-halo">
+                  <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gray-400 rounded-golden flex items-center justify-center text-white text-2xl sm:text-3xl font-light group-hover:scale-110 transition-transform mb-3 sm:mb-4 shadow-halo shrink-0">
                     +
                   </div>
-                  <span className="font-bold text-gray-600 text-sm">Ajouter un Widget</span>
+                  <span className="font-bold text-gray-600 text-xs sm:text-sm text-center leading-tight max-w-[8rem] sm:max-w-none">
+                    Ajouter un Widget
+                  </span>
                 </button>
               )}
             </WidgetGrid>
@@ -326,53 +427,17 @@ export default function Dashboard() {
           {/* =========================================
               SIDEBAR MEMBRES
           ========================================= */}
-          <div className="w-full lg:w-[320px] bg-white/60 backdrop-blur-[10px] rounded-[2.5rem] p-6 shadow-halo border border-white/50 flex flex-col">
-            <h2 className="font-outfit font-black text-xl text-gray-900 mb-1">Members</h2>
-            <p className="text-xs font-semibold text-gray-500 mb-6">{group.members?.length || 0} Active Now</p>
-
-            <div className="space-y-4">
-              {group.members?.map((member) => (
-                <div key={member.id} className="flex items-center justify-between relative group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 border-2 border-white shadow-halo flex items-center justify-center text-xs font-bold text-gray-600">
-                      {member.user?.avatar ? <img src={getMediaUrl(member.user.avatar)} alt="Avatar" className="w-full h-full object-cover" /> : getInitials(member.user?.name)}
-                    </div>
-                    <div>
-                      <p className="font-bold text-sm text-gray-900 leading-tight">{member.user?.name || `Utilisateur`}</p>
-                      
-                      <button 
-                        onClick={() => canManageTeam && (canChangeRole(member) || canTransferOwnership(member)) ? setOpenMemberDropdownId(openMemberDropdownId === member.id ? null : member.id) : null}
-                        className={`text-[10px] font-bold uppercase tracking-widest text-gray-500 flex items-center gap-1 mt-0.5 ${canManageTeam ? 'cursor-pointer hover:text-gray-800' : 'cursor-default'}`}
-                      >
-                        {member.role}
-                        {canManageTeam && (canChangeRole(member) || canTransferOwnership(member)) && (
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                        )}
-                      </button>
-
-                      {openMemberDropdownId === member.id && (
-                        <div className="absolute left-10 top-10 w-56 bg-white rounded-[2rem] shadow-halo py-3 z-50 flex flex-col font-bold text-[10px] uppercase tracking-widest text-center border border-gray-100">
-                          {canTransferOwnership(member) && (
-                            <>
-                              <button onClick={() => handleTransferOwnership(member.userId)} className="py-2.5 text-gray-700 hover:text-black hover:bg-gray-50 transition cursor-pointer">Transférer la propriété</button>
-                              <div className="w-full h-px bg-gray-100 my-1"></div>
-                            </>
-                          )}
-                          {canChangeRole(member) && (
-                            <>
-                              <button onClick={() => handleChangeRole(member.userId, 'EDITOR')} className="py-2.5 text-gray-700 hover:text-black hover:bg-gray-50 transition cursor-pointer">Editor</button>
-                              <div className="w-full h-px bg-gray-100 my-1"></div>
-                              <button onClick={() => handleChangeRole(member.userId, 'MEMBER')} className="py-2.5 text-gray-700 hover:text-black hover:bg-gray-50 transition cursor-pointer">Member</button>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <GroupMembersPanel
+            group={group}
+            canManageTeam={canManageTeam}
+            canChangeRole={canChangeRole}
+            canTransferOwnership={canTransferOwnership}
+            openMemberDropdownId={openMemberDropdownId}
+            setOpenMemberDropdownId={setOpenMemberDropdownId}
+            onChangeRole={handleChangeRole}
+            onTransferOwnership={handleTransferOwnership}
+            className="hidden min-[1030px]:flex w-full min-[1030px]:w-[320px] bg-white/60 backdrop-blur-[10px] rounded-golden p-6 shadow-halo border border-white/50 flex-col"
+          />
         </div>
       </div>
 
@@ -381,7 +446,7 @@ export default function Dashboard() {
       ========================================= */}
       {isWidgetModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md shadow-halo relative flex flex-col items-center">
+          <div className="bg-white rounded-golden p-8 w-full max-w-md shadow-halo relative flex flex-col items-center">
             
             {/* Bouton Fermer */}
             <button onClick={() => setIsWidgetModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-800 transition cursor-pointer">
@@ -396,7 +461,7 @@ export default function Dashboard() {
               <input 
                 type="text" 
                 placeholder="Rechercher un widget..." 
-                className="w-full bg-golden-input shadow-creuse rounded-full py-3.5 pl-12 pr-5 text-sm font-medium focus:outline-none text-golden-text placeholder-gray-400 transition-all" 
+                className="w-full bg-golden-input shadow-creuse rounded-golden py-3.5 pl-12 pr-5 text-sm font-medium focus:outline-none text-golden-text placeholder-gray-400 transition-all" 
               />
             </div>
 
@@ -405,9 +470,9 @@ export default function Dashboard() {
               
               <button 
                 onClick={() => handleAddWidget('TEST')} 
-                className={`bg-[#4a89f3] text-white rounded-[2rem] p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer ${widgetSize === 'SQUARE' ? 'aspect-square' : 'aspect-[2.08/1]'}`}
+                className={`bg-[#4a89f3] text-white rounded-golden p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer ${widgetSize === 'SQUARE' ? 'aspect-square' : 'aspect-[2.08/1]'}`}
               >
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mb-auto">
+                <div className="w-8 h-8 rounded-golden bg-white/20 flex items-center justify-center mb-auto shadow-halo">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
                 </div>
                 <h3 className="font-bold text-lg leading-tight mt-2">Weather</h3>
@@ -416,9 +481,9 @@ export default function Dashboard() {
               
               <button 
                 onClick={() => handleAddWidget('TEST')} 
-                className={`bg-[#eaf4fc] text-[#00527c] rounded-[2rem] p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer ${widgetSize === 'SQUARE' ? 'aspect-square' : 'aspect-[2.08/1]'}`}
+                className={`bg-[#eaf4fc] text-[#00527c] rounded-golden p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer ${widgetSize === 'SQUARE' ? 'aspect-square' : 'aspect-[2.08/1]'}`}
               >
-                <div className="w-8 h-8 rounded-full bg-[#c6e4fa] flex items-center justify-center mb-auto">
+                <div className="w-8 h-8 rounded-golden bg-[#c6e4fa] flex items-center justify-center mb-auto shadow-halo">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
                 </div>
                 <h3 className="font-bold text-lg leading-tight mt-2">Ideas</h3>
@@ -430,9 +495,9 @@ export default function Dashboard() {
                 <>
                   <button 
                     onClick={() => handleAddWidget('TEST')} 
-                    className="bg-[#fbbf24] text-gray-900 rounded-[2rem] p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer aspect-square"
+                    className="bg-[#fbbf24] text-gray-900 rounded-golden p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer aspect-square"
                   >
-                    <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center mb-auto">
+                    <div className="w-8 h-8 rounded-golden bg-white/30 flex items-center justify-center mb-auto shadow-halo">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
                     <h3 className="font-bold text-lg leading-tight mt-2">Focus</h3>
@@ -441,9 +506,9 @@ export default function Dashboard() {
 
                   <button 
                     onClick={() => handleAddWidget('TEST')} 
-                    className="bg-[#4a89f3] text-white rounded-[2rem] p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer aspect-square"
+                    className="bg-[#4a89f3] text-white rounded-golden p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer aspect-square"
                   >
-                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mb-auto">
+                    <div className="w-8 h-8 rounded-golden bg-white/20 flex items-center justify-center mb-auto shadow-halo">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
                     </div>
                     <h3 className="font-bold text-lg leading-tight mt-2">Weather</h3>
@@ -454,10 +519,10 @@ export default function Dashboard() {
             </div>
 
             {/* Switch Carré / Rectangle avec l'effet "Incrusté" */}
-            <div className="bg-golden-input shadow-creuse rounded-full flex items-center w-full max-w-[280px]">
+            <div className="bg-golden-input shadow-creuse rounded-golden flex items-center w-full max-w-[280px]">
               <button 
                 onClick={() => setWidgetSize('SQUARE')}
-                className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-all duration-300 cursor-pointer ${
+                className={`flex-1 py-2.5 rounded-golden text-sm font-bold transition-all duration-300 cursor-pointer ${
                   widgetSize === 'SQUARE' ? 'bg-golden-primary text-gray-900 shadow-halo' : 'text-gray-500 hover:text-gray-900 bg-transparent'
                 }`}
               >
@@ -465,7 +530,7 @@ export default function Dashboard() {
               </button>
               <button 
                 onClick={() => setWidgetSize('RECT')}
-                className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-all duration-300 cursor-pointer ${
+                className={`flex-1 py-2.5 rounded-golden text-sm font-bold transition-all duration-300 cursor-pointer ${
                   widgetSize === 'RECT' ? 'bg-golden-primary text-gray-900 shadow-halo' : 'text-gray-500 hover:text-gray-900 bg-transparent'
                 }`}
               >
@@ -480,3 +545,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

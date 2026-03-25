@@ -12,6 +12,7 @@ router.get('/', verifyToken, groupController.getGroups);
 router.post('/join', verifyToken, groupController.joinGroup)
 router.use('/:id/widgets', verifyToken, widgetRoutes);
 router.get('/:id', verifyToken, groupController.getGroupById);
+router.put('/:id', verifyToken, checkRole(['ADMIN', 'EDITOR']), groupController.updateGroup);
 router.post('/:id/cover', verifyToken, checkRole(['ADMIN', 'EDITOR']), coverUploadMiddleware, groupController.uploadCover);
 router.put('/:id/members/:userId', verifyToken, checkRole(['ADMIN']), groupController.updateMemberRole);
 router.delete('/:id/members/:userId', verifyToken, checkRole(['ADMIN', 'EDITOR'], { allowSelf: true }), groupController.removeMember);
