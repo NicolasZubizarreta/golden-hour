@@ -35,7 +35,8 @@ export default function SortableWidget({
     <div
       ref={setNodeRef}
       style={style}
-      className={`${widget.size === 'RECT' ? 'col-span-2' : 'col-span-1'} ${isActiveDrag ? 'pointer-events-none' : ''}`}
+      // MAGIE ICI : aspect-[2.08/1] pour le RECT, aspect-square pour le CARRE
+      className={`w-full h-full ${widget.size === 'RECT' ? 'col-span-2 aspect-[2.08/1]' : 'col-span-1 aspect-square'} ${isActiveDrag ? 'pointer-events-none' : ''}`}
     >
       <TestWidgetCard
         widget={widget}

@@ -17,7 +17,13 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [copySuccess, setCopySuccess] = useState(false);
   const [actionLoading, setActionLoading] = useState(null);
+  
+  // États UI
   const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
+  const [widgetSize, setWidgetSize] = useState('SQUARE');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [openMemberDropdownId, setOpenMemberDropdownId] = useState(null);
+  
   const coverInputRef = useRef(null);
 
   const fetchGroupDetails = async () => {
@@ -39,40 +45,30 @@ export default function Dashboard() {
     const fetchDashboardData = async () => {
       setIsLoading(true);
       setError('');
-
       try {
         const [groupData, widgetData] = await Promise.all([
           fetchGroupDetails(),
           fetchWidgets(),
         ]);
-
         if (!isCancelled) {
           setGroup(groupData);
           setWidgets(widgetData);
         }
       } catch (err) {
         if (!isCancelled) {
-          setError(err.message);
+          setError(getApiErrorMessage(err, 'Impossible de charger le dashboard du groupe.'));
         }
       } finally {
-        if (!isCancelled) {
-          setIsLoading(false);
-        }
+        if (!isCancelled) setIsLoading(false);
       }
     };
 
     fetchDashboardData();
-
-    return () => {
-      isCancelled = true;
-    };
+    return () => { isCancelled = true; };
   }, [id]);
 
   const handleCopyCode = () => {
-    if (!group?.inviteCode) {
-      return;
-    }
-
+    if (!group?.inviteCode) return;
     navigator.clipboard.writeText(group.inviteCode);
     setCopySuccess(true);
     setTimeout(() => setCopySuccess(false), 2000);
@@ -81,42 +77,34 @@ export default function Dashboard() {
   const handleChangeRole = async (memberId, newRole) => {
     setError('');
     setActionLoading(`role-${memberId}`);
-
     try {
       await api.put(`/groups/${id}/members/${memberId}`, { role: newRole });
       await fetchGroupDetails();
+      setOpenMemberDropdownId(null);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Impossible de modifier le role.'));
+      setError(getApiErrorMessage(err, 'Impossible de modifier le rôle.'));
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleKickMember = async (memberId) => {
-    if (!window.confirm('Etes-vous sur de vouloir exclure ce membre ?')) {
-      return;
-    }
-
+    if (!window.confirm('Êtes-vous sûr de vouloir exclure ce membre ?')) return;
     setError('');
     setActionLoading(`kick-${memberId}`);
-
     try {
       await api.delete(`/groups/${id}/members/${memberId}`);
       await fetchGroupDetails();
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Impossible d exclure ce membre.'));
+      setError(getApiErrorMessage(err, "Impossible d'exclure ce membre."));
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleDeleteGroup = async () => {
-    if (!window.confirm('Voulez-vous vraiment supprimer ce groupe definitivement ?')) {
-      return;
-    }
-
+    if (!window.confirm('Voulez-vous vraiment supprimer ce groupe définitivement ?')) return;
     setError('');
-
     try {
       await api.delete(`/groups/${id}`);
       navigate('/hub');
@@ -126,36 +114,25 @@ export default function Dashboard() {
   };
 
   const handleTransferOwnership = async (newOwnerId) => {
-    if (!window.confirm('Transferer la propriete ? Ce membre deviendra ADMIN et vous deviendrez EDITOR.')) {
-      return;
-    }
-
+    if (!window.confirm('Transférer la propriété ? Ce membre deviendra ADMIN et vous deviendrez EDITOR.')) return;
     setError('');
     setActionLoading(`transfer-${newOwnerId}`);
-
     try {
       await api.put(`/groups/${id}/transfer`, { newAdminId: newOwnerId });
       await fetchGroupDetails();
+      setOpenMemberDropdownId(null);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Impossible de transferer la propriete.'));
+      setError(getApiErrorMessage(err, 'Impossible de transférer la propriété.'));
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleLeaveGroup = async () => {
-    if (!currentUserId) {
-      setError('Session utilisateur introuvable.');
-      return;
-    }
-
-    if (!window.confirm('Voulez-vous vraiment quitter ce groupe ?')) {
-      return;
-    }
-
+    if (!currentUserId) return setError('Session utilisateur introuvable.');
+    if (!window.confirm('Voulez-vous vraiment quitter ce groupe ?')) return;
     setError('');
     setActionLoading('leave-group');
-
     try {
       await api.delete(`/groups/${id}/members/${currentUserId}`);
       navigate('/hub');
@@ -168,54 +145,44 @@ export default function Dashboard() {
 
   const handleCoverUpload = async (event) => {
     const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
+    if (!file) return;
     setError('');
     setActionLoading('cover-upload');
-
     try {
       const formData = new FormData();
       formData.append('cover', file);
-
       const { data } = await api.post(`/groups/${id}/cover`, formData);
       setGroup(data.group || data);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Impossible de mettre a jour le fond d ecran.'));
+      setError(getApiErrorMessage(err, "Impossible de mettre à jour le fond d'écran."));
     } finally {
       event.target.value = '';
       setActionLoading(null);
+      setIsSettingsOpen(false);
     }
   };
 
-  const handleAddWidget = async (size) => {
+  const handleAddWidget = async (type) => {
     setError('');
-    setActionLoading(`add-widget-${size}`);
-
+    setActionLoading(`add-widget-${widgetSize}`);
     try {
       const { data } = await api.post(`/groups/${id}/widgets`, {
-        type: 'TEST',
-        size,
+        type: type, 
+        size: widgetSize,
       });
       setWidgets(data.widgets || []);
       setIsWidgetModalOpen(false);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Impossible d ajouter le widget.'));
+      setError(getApiErrorMessage(err, "Impossible d'ajouter le widget."));
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleDeleteWidget = async (widgetId) => {
-    if (!window.confirm('Supprimer ce widget du Dashboard ?')) {
-      return;
-    }
-
+    if (!window.confirm('Supprimer ce widget du Dashboard ?')) return;
     setError('');
     setActionLoading(`delete-widget-${widgetId}`);
-
     try {
       const { data } = await api.delete(`/groups/${id}/widgets/${widgetId}`);
       setWidgets(data.widgets || []);
@@ -230,7 +197,6 @@ export default function Dashboard() {
     setWidgets(nextWidgets);
     setError('');
     setActionLoading('widgets-reorder');
-
     try {
       const { data } = await api.put(`/groups/${id}/widgets/reorder`, {
         widgets: nextWidgets.map((widget, index) => ({
@@ -247,13 +213,8 @@ export default function Dashboard() {
     }
   };
 
-  if (isLoading) {
-    return <div className="p-8 text-center">Chargement du groupe...</div>;
-  }
-
-  if (!group) {
-    return <div className="p-8 text-center text-red-500">{error || 'Groupe introuvable.'}</div>;
-  }
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center font-bold text-xl">Chargement du Dashboard...</div>;
+  if (!group) return <div className="min-h-screen flex items-center justify-center text-red-500 font-bold text-xl">{error || 'Groupe introuvable.'}</div>;
 
   const currentUserMemberInfo = group.members?.find((member) => member.userId === currentUserId);
   const myRole = currentUserMemberInfo?.role || 'MEMBER';
@@ -261,305 +222,261 @@ export default function Dashboard() {
   const canManageTeam = myRole === 'ADMIN' || myRole === 'EDITOR';
 
   const canChangeRole = (member) => myRole === 'ADMIN' && member.userId !== group.createdById;
-  const canKickMember = (member) => {
-    if (member.userId === group.createdById) return false;
-    if (myRole === 'ADMIN') return member.userId !== currentUserId;
-    if (myRole === 'EDITOR') return member.role === 'MEMBER' && member.userId !== currentUserId;
-    return false;
-  };
   const canTransferOwnership = (member) => myRole === 'ADMIN' && member.role === 'EDITOR';
 
-  const deletingWidgetId = actionLoading?.startsWith('delete-widget-')
-    ? parseInt(actionLoading.replace('delete-widget-', ''), 10)
-    : null;
+  const deletingWidgetId = actionLoading?.startsWith('delete-widget-') ? parseInt(actionLoading.replace('delete-widget-', ''), 10) : null;
 
   return (
     <div
-      className="min-h-screen p-8 flex flex-col"
-      style={group.coverImage ? {
-        backgroundImage: `url(${getMediaUrl(group.coverImage)})`,
+      className="min-h-screen font-inter flex flex-col items-center py-6 lg:py-10"
+      style={{
+        backgroundImage: group.coverImage ? `url(${getMediaUrl(group.coverImage)})` : 'linear-gradient(to bottom right, #fcfaf3, #faeec5)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-      } : { backgroundColor: '#f9fafb' }}
+        backgroundAttachment: 'fixed'
+      }}
     >
-      <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between bg-white p-6 rounded-xl shadow-sm">
-        <div>
-          <Link to="/hub" className="text-sm text-blue-500 hover:underline mb-2 inline-block">Retour au Hub</Link>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold">{group.name}</h1>
-            <span className="text-xs font-bold uppercase tracking-wider bg-gray-100 text-gray-600 px-2 py-1 rounded">
-              {group.type}
-            </span>
-          </div>
-          {isCreator && (
-            <p className="text-xs font-semibold text-purple-700 mt-2">Vous etes le createur initial du groupe.</p>
-          )}
-        </div>
+      {/* Filtre noir supprimé */}
 
-        <div className="mt-4 md:mt-0 flex flex-col items-end gap-2">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-sm font-bold text-gray-600">
-              {user?.avatar ? (
-                <img src={getMediaUrl(user.avatar)} alt={`Avatar de ${user.name}`} className="w-full h-full object-cover" />
-              ) : (
-                getInitials(user?.name)
+      <div className="w-full max-w-[1440px] px-6 md:px-[48px] z-10 flex flex-col flex-1">
+        
+        {/* =========================================
+            TOP BAR
+        ========================================= */}
+        <header className="w-full relative z-50 bg-white/60 backdrop-blur-[10px] rounded-[2rem] py-[16px] px-[32px] flex flex-col md:flex-row justify-between items-center shadow-halo mb-8">
+          
+          <Link to="/hub" className="flex items-center gap-4 hover:scale-[1.02] transition-transform cursor-pointer">
+            <img src="/LogoGoldenHour.png" alt="Logo" className="w-10 h-10 object-contain drop-shadow-[0_0_5px_rgba(0,0,0,0.25)]" />
+            <h1 className="font-outfit font-black text-xl text-gray-900 drop-shadow-sm">{group.name}</h1>
+          </Link>
+
+          <div className="flex items-center gap-4 mt-4 md:mt-0 relative">
+            
+            {/* ZONE CODE INCRUSTÉ : shadow-creuse sur le container, shadow-halo sur le bouton */}
+            <div className="flex items-center color-golden-input shadow-creuse rounded-full pl-5">
+              <span className="font-mono font-bold text-sm text-gray-800 pr-5 tracking-widest">{group.inviteCode}</span>
+              <button 
+                onClick={handleCopyCode} 
+                className="bg-white rounded-full px-6 py-2 text-xs font-extrabold text-gray-900 shadow-halo hover:bg-gray-50 transition cursor-pointer"
+              >
+                {copySuccess ? 'Copié !' : 'Copier'}
+              </button>
+            </div>
+
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 border-2 border-white shadow-halo">
+              {user?.avatar ? <img src={getMediaUrl(user.avatar)} alt="Avatar" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-sm font-bold">{getInitials(user?.name)}</div>}
+            </div>
+
+            <div className="relative flex items-center">
+              <button onClick={() => setIsSettingsOpen(!isSettingsOpen)} className="text-gray-700 hover:text-gray-900 transition hover:scale-110 cursor-pointer">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+              </button>
+
+              {isSettingsOpen && (
+                <div className="absolute right-0 top-10 w-64 bg-white rounded-[2rem] shadow-halo py-4 z-50 flex flex-col font-bold text-xs uppercase tracking-widest text-center border border-gray-100">
+                  <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
+                  {canManageTeam && (
+                    <button onClick={() => coverInputRef.current?.click()} className="py-3 text-gray-700 hover:text-black transition cursor-pointer">Changer de fond</button>
+                  )}
+                  {!isCreator && (
+                    <button onClick={handleLeaveGroup} className="py-3 text-red-500 hover:text-red-700 transition cursor-pointer">Quitter le groupe</button>
+                  )}
+                  {isCreator && (
+                    <>
+                      <div className="w-full h-px bg-red-100 my-1"></div>
+                      <button onClick={handleDeleteGroup} className="py-3 text-red-500 hover:text-red-700 transition cursor-pointer">Supprimer le groupe</button>
+                    </>
+                  )}
+                </div>
               )}
             </div>
-            <div className="text-right">
-              <p className="text-sm font-semibold text-gray-800">{user?.name || 'Utilisateur'}</p>
-              <p className="text-xs text-gray-500">{myRole}</p>
-            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Code :</span>
-            <span className="text-xl font-mono font-bold bg-yellow-100 px-3 py-1 rounded text-yellow-800">
-              {group.inviteCode}
-            </span>
-            <button
-              onClick={handleCopyCode}
-              className="px-3 py-1 bg-gray-900 text-white text-sm font-bold rounded hover:bg-gray-800 transition"
+        </header>
+
+        {error && <div className="w-full bg-red-100 text-red-700 p-4 rounded-2xl mb-6 text-sm font-bold text-center shadow-sm">{error}</div>}
+
+        <div className="flex flex-col lg:flex-row gap-8 flex-1 items-stretch">
+          
+          {/* =========================================
+              ZONE WIDGETS
+          ========================================= */}
+          <div className="flex-1 flex flex-col">
+            <WidgetGrid
+              widgets={widgets}
+              canManageWidgets={canManageTeam}
+              isReordering={actionLoading === 'widgets-reorder'}
+              deletingWidgetId={deletingWidgetId}
+              onDeleteWidget={handleDeleteWidget}
+              onReorderWidgets={handleReorderWidgets}
             >
-              {copySuccess ? 'Copie' : 'Copier'}
-            </button>
-          </div>
-          {canManageTeam && (
-            <>
-              <input
-                ref={coverInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleCoverUpload}
-              />
-              <button
-                type="button"
-                onClick={() => coverInputRef.current?.click()}
-                disabled={actionLoading === 'cover-upload'}
-                className="text-xs text-gray-700 hover:text-gray-900 underline mt-1 disabled:opacity-50"
-              >
-                {actionLoading === 'cover-upload' ? 'Upload...' : 'Changer le fond d ecran'}
-              </button>
-            </>
-          )}
-          {isCreator ? (
-            <button onClick={handleDeleteGroup} className="text-xs text-red-500 hover:text-red-700 underline mt-1">
-              Supprimer le groupe definitivement
-            </button>
-          ) : (
-            <button
-              onClick={handleLeaveGroup}
-              disabled={actionLoading === 'leave-group'}
-              className="text-xs text-red-500 hover:text-red-700 underline mt-1 disabled:opacity-50"
-            >
-              {actionLoading === 'leave-group' ? 'Depart...' : 'Quitter le groupe'}
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-6 flex-grow">
-        <div className="flex-grow bg-white/92 backdrop-blur-sm rounded-[28px] shadow-sm border border-white/60 p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gray-400">Widget Engine</p>
-              <h2 className="text-2xl font-bold text-gray-900 mt-1">Board du groupe</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Grille 2 colonnes, widgets carre et rectangle, ordre sauvegarde.
-              </p>
-            </div>
-
-            {canManageTeam && (
-              <button
-                type="button"
-                onClick={() => setIsWidgetModalOpen(true)}
-                className="inline-flex items-center justify-center rounded-full bg-gray-900 px-5 py-3 text-sm font-bold text-white transition hover:bg-gray-800"
-              >
-                Ajouter un widget
-              </button>
-            )}
-          </div>
-
-          {error && (
-            <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          {widgets.length > 0 ? (
-            <>
-              <WidgetGrid
-                widgets={widgets}
-                canManageWidgets={canManageTeam}
-                isReordering={actionLoading === 'widgets-reorder'}
-                deletingWidgetId={deletingWidgetId}
-                onDeleteWidget={handleDeleteWidget}
-                onReorderWidgets={handleReorderWidgets}
-              />
-
-              {actionLoading === 'widgets-reorder' && (
-                <p className="mt-4 text-xs font-medium uppercase tracking-[0.24em] text-gray-500">
-                  Sauvegarde du nouvel ordre...
-                </p>
+              {canManageTeam && (
+                <button
+                  onClick={() => setIsWidgetModalOpen(true)}
+                  className="col-span-1 aspect-square bg-white/60 backdrop-blur-[10px] border-[3px] border-dashed border-gray-300 rounded-[2.5rem] flex flex-col items-center justify-center p-8 hover:bg-white transition group shadow-halo cursor-pointer w-full"
+                >
+                  <div className="w-14 h-14 bg-gray-400 rounded-full flex items-center justify-center text-white text-3xl font-light group-hover:scale-110 transition-transform mb-4 shadow-halo">
+                    +
+                  </div>
+                  <span className="font-bold text-gray-600 text-sm">Ajouter un Widget</span>
+                </button>
               )}
-            </>
-          ) : canManageTeam ? (
-            <div className="min-h-[420px] rounded-[24px] border-2 border-dashed border-gray-200 bg-gray-50/70 flex flex-col items-center justify-center text-center px-6">
-              <button
-                type="button"
-                onClick={() => setIsWidgetModalOpen(true)}
-                className="w-16 h-16 bg-yellow-100 text-yellow-700 rounded-full flex items-center justify-center text-4xl leading-none shadow-sm hover:bg-yellow-200 transition"
-              >
-                +
-              </button>
-              <h3 className="mt-5 text-xl font-bold text-gray-900">Ajoutez vos premiers widgets</h3>
-              <p className="mt-2 max-w-md text-sm text-gray-500">
-                Commencez avec des widgets de test carres ou rectangles, puis reordonnez-les librement par drag and drop.
-              </p>
-            </div>
-          ) : (
-            <div className="min-h-[420px] rounded-[24px] border border-gray-200 bg-gray-50/70 flex flex-col items-center justify-center text-center px-6">
-              <p className="text-lg font-semibold text-gray-700">Aucun widget pour le moment.</p>
-              <p className="mt-2 text-sm text-gray-500">Un admin ou un editor doit d abord construire le board.</p>
-            </div>
-          )}
-        </div>
+            </WidgetGrid>
+          </div>
 
-        <div className="w-full lg:w-80 flex-shrink-0 bg-white p-5 rounded-xl shadow-sm">
-          <h2 className="text-lg font-bold mb-4 border-b pb-2">Equipe ({group.members?.length || 0})</h2>
+          {/* =========================================
+              SIDEBAR MEMBRES
+          ========================================= */}
+          <div className="w-full lg:w-[320px] bg-white/60 backdrop-blur-[10px] rounded-[2.5rem] p-6 shadow-halo border border-white/50 flex flex-col">
+            <h2 className="font-outfit font-black text-xl text-gray-900 mb-1">Members</h2>
+            <p className="text-xs font-semibold text-gray-500 mb-6">{group.members?.length || 0} Active Now</p>
 
-          <div className="space-y-3">
-            {group.members?.map((member) => (
-              <div key={member.id} className="p-3 border rounded-lg bg-gray-50 hover:bg-white transition shadow-sm">
-                <div className="flex justify-between items-start mb-2">
+            <div className="space-y-4">
+              {group.members?.map((member) => (
+                <div key={member.id} className="flex items-center justify-between relative group">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600 flex-shrink-0">
-                      {member.user?.avatar ? (
-                        <img
-                          src={getMediaUrl(member.user.avatar)}
-                          alt={`Avatar de ${member.user?.name || `Utilisateur ${member.userId}`}`}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        getInitials(member.user?.name || `U${member.userId}`)
-                      )}
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 border-2 border-white shadow-halo flex items-center justify-center text-xs font-bold text-gray-600">
+                      {member.user?.avatar ? <img src={getMediaUrl(member.user.avatar)} alt="Avatar" className="w-full h-full object-cover" /> : getInitials(member.user?.name)}
                     </div>
                     <div>
-                      <span className="font-semibold text-sm text-gray-800 block">
-                        {member.user?.name || `Utilisateur #${member.userId}`}
-                      </span>
-                      {member.user?.email && (
-                        <span className="text-xs text-gray-500 block">{member.user.email}</span>
+                      <p className="font-bold text-sm text-gray-900 leading-tight">{member.user?.name || `Utilisateur`}</p>
+                      
+                      <button 
+                        onClick={() => canManageTeam && (canChangeRole(member) || canTransferOwnership(member)) ? setOpenMemberDropdownId(openMemberDropdownId === member.id ? null : member.id) : null}
+                        className={`text-[10px] font-bold uppercase tracking-widest text-gray-500 flex items-center gap-1 mt-0.5 ${canManageTeam ? 'cursor-pointer hover:text-gray-800' : 'cursor-default'}`}
+                      >
+                        {member.role}
+                        {canManageTeam && (canChangeRole(member) || canTransferOwnership(member)) && (
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        )}
+                      </button>
+
+                      {openMemberDropdownId === member.id && (
+                        <div className="absolute left-10 top-10 w-56 bg-white rounded-[2rem] shadow-halo py-3 z-50 flex flex-col font-bold text-[10px] uppercase tracking-widest text-center border border-gray-100">
+                          {canTransferOwnership(member) && (
+                            <>
+                              <button onClick={() => handleTransferOwnership(member.userId)} className="py-2.5 text-gray-700 hover:text-black hover:bg-gray-50 transition cursor-pointer">Transférer la propriété</button>
+                              <div className="w-full h-px bg-gray-100 my-1"></div>
+                            </>
+                          )}
+                          {canChangeRole(member) && (
+                            <>
+                              <button onClick={() => handleChangeRole(member.userId, 'EDITOR')} className="py-2.5 text-gray-700 hover:text-black hover:bg-gray-50 transition cursor-pointer">Editor</button>
+                              <div className="w-full h-px bg-gray-100 my-1"></div>
+                              <button onClick={() => handleChangeRole(member.userId, 'MEMBER')} className="py-2.5 text-gray-700 hover:text-black hover:bg-gray-50 transition cursor-pointer">Member</button>
+                            </>
+                          )}
+                        </div>
                       )}
                     </div>
-                    {member.userId === currentUserId && (
-                      <span className="inline-block mt-1 text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-bold">Moi</span>
-                    )}
                   </div>
-                  <span className={`text-[10px] px-2 py-1 rounded font-bold uppercase tracking-wider ${
-                    member.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
-                    member.role === 'EDITOR' ? 'bg-green-100 text-green-700' :
-                    'bg-gray-200 text-gray-600'
-                  }`}>
-                    {member.role}
-                  </span>
                 </div>
-
-                {canManageTeam && (canChangeRole(member) || canKickMember(member) || canTransferOwnership(member)) && (
-                  <div className="flex flex-wrap gap-2 justify-end mt-3 pt-3 border-t border-gray-200">
-                    {canTransferOwnership(member) && (
-                      <button
-                        onClick={() => handleTransferOwnership(member.userId)}
-                        disabled={actionLoading === `transfer-${member.userId}`}
-                        className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 disabled:opacity-50"
-                      >
-                        {actionLoading === `transfer-${member.userId}` ? '...' : 'Rendre Admin'}
-                      </button>
-                    )}
-
-                    {canChangeRole(member) && (
-                      <select
-                        onChange={(event) => handleChangeRole(member.userId, event.target.value)}
-                        value={member.role}
-                        disabled={actionLoading === `role-${member.userId}`}
-                        className="text-[10px] font-medium border border-gray-300 rounded p-1 bg-white disabled:opacity-50"
-                      >
-                        <option value="MEMBER">Membre</option>
-                        <option value="EDITOR">Editeur</option>
-                      </select>
-                    )}
-
-                    {canKickMember(member) && (
-                      <button
-                        onClick={() => handleKickMember(member.userId)}
-                        disabled={actionLoading === `kick-${member.userId}`}
-                        className="text-[10px] font-bold bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200 disabled:opacity-50"
-                      >
-                        {actionLoading === `kick-${member.userId}` ? '...' : 'Exclure'}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* =========================================
+          MODALE : AJOUTER UN WIDGET
+      ========================================= */}
       {isWidgetModalOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-2xl relative">
-            <button
-              onClick={() => setIsWidgetModalOpen(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center transition"
-            >
-              X
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-md shadow-halo relative flex flex-col items-center">
+            
+            {/* Bouton Fermer */}
+            <button onClick={() => setIsWidgetModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-800 transition cursor-pointer">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
 
-            <h2 className="text-2xl font-bold mb-2">Ajouter un widget</h2>
-            <p className="text-gray-500 text-sm mb-6">Le moteur de grille est pret. Commencez avec des widgets de test.</p>
+            <h2 className="font-outfit font-black text-3xl text-gray-900 mb-6 w-full text-left">Ajouter un widget</h2>
+            
+            {/* Barre de recherche (shadow-creuse + bg-golden-input) */}
+            <div className="w-full relative mb-6">
+              <svg className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              <input 
+                type="text" 
+                placeholder="Rechercher un widget..." 
+                className="w-full bg-golden-input shadow-creuse rounded-full py-3.5 pl-12 pr-5 text-sm font-medium focus:outline-none text-golden-text placeholder-gray-400 transition-all" 
+              />
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <button
-                type="button"
-                onClick={() => handleAddWidget('SQUARE')}
-                disabled={actionLoading === 'add-widget-SQUARE'}
-                className="rounded-3xl bg-[#F9A826] p-5 text-left text-gray-900 shadow-sm transition hover:-translate-y-0.5 disabled:opacity-50"
+            {/* Grille dynamique des options (1 colonne si RECT, 2 colonnes si SQUARE) */}
+            <div className={`grid gap-4 w-full mb-8 transition-all duration-300 ${widgetSize === 'SQUARE' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              
+              <button 
+                onClick={() => handleAddWidget('TEST')} 
+                className={`bg-[#4a89f3] text-white rounded-[2rem] p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer ${widgetSize === 'SQUARE' ? 'aspect-square' : 'aspect-[2.08/1]'}`}
               >
-                <span className="text-xs font-bold uppercase tracking-[0.24em] opacity-70">SQUARE</span>
-                <h3 className="mt-4 text-2xl font-bold">Widget Test</h3>
-                <p className="mt-2 text-sm opacity-80">Une case dans la grille. Parfait pour verifier l alignement.</p>
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mb-auto">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                </div>
+                <h3 className="font-bold text-lg leading-tight mt-2">Weather</h3>
+                <p className="text-xs opacity-80">72° Clear Skies</p>
+              </button>
+              
+              <button 
+                onClick={() => handleAddWidget('TEST')} 
+                className={`bg-[#eaf4fc] text-[#00527c] rounded-[2rem] p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer ${widgetSize === 'SQUARE' ? 'aspect-square' : 'aspect-[2.08/1]'}`}
+              >
+                <div className="w-8 h-8 rounded-full bg-[#c6e4fa] flex items-center justify-center mb-auto">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                </div>
+                <h3 className="font-bold text-lg leading-tight mt-2">Ideas</h3>
+                <p className="text-xs opacity-80">12 new entries</p>
               </button>
 
-              <button
-                type="button"
-                onClick={() => handleAddWidget('RECT')}
-                disabled={actionLoading === 'add-widget-RECT'}
-                className="rounded-3xl bg-[#1D4ED8] p-5 text-left text-white shadow-sm transition hover:-translate-y-0.5 disabled:opacity-50"
+              {/* On n'affiche que 2 cartes quand on est en mode rectangle pour ne pas faire une modale trop haute */}
+              {widgetSize === 'SQUARE' && (
+                <>
+                  <button 
+                    onClick={() => handleAddWidget('TEST')} 
+                    className="bg-[#fbbf24] text-gray-900 rounded-[2rem] p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer aspect-square"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center mb-auto">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 className="font-bold text-lg leading-tight mt-2">Focus</h3>
+                    <p className="text-xs opacity-80">Deep work: 2h</p>
+                  </button>
+
+                  <button 
+                    onClick={() => handleAddWidget('TEST')} 
+                    className="bg-[#4a89f3] text-white rounded-[2rem] p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer aspect-square"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center mb-auto">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                    </div>
+                    <h3 className="font-bold text-lg leading-tight mt-2">Weather</h3>
+                    <p className="text-xs opacity-80">72° Clear Skies</p>
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Switch Carré / Rectangle avec l'effet "Incrusté" */}
+            <div className="bg-golden-input shadow-creuse rounded-full flex items-center w-full max-w-[280px]">
+              <button 
+                onClick={() => setWidgetSize('SQUARE')}
+                className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-all duration-300 cursor-pointer ${
+                  widgetSize === 'SQUARE' ? 'bg-golden-primary text-gray-900 shadow-halo' : 'text-gray-500 hover:text-gray-900 bg-transparent'
+                }`}
               >
-                <span className="text-xs font-bold uppercase tracking-[0.24em] opacity-70">RECT</span>
-                <h3 className="mt-4 text-2xl font-bold">Widget Large</h3>
-                <p className="mt-2 text-sm opacity-80">Deux colonnes de large pour tester les spans et le drag and drop.</p>
+                Carré
+              </button>
+              <button 
+                onClick={() => setWidgetSize('RECT')}
+                className={`flex-1 py-2.5 rounded-full text-sm font-bold transition-all duration-300 cursor-pointer ${
+                  widgetSize === 'RECT' ? 'bg-golden-primary text-gray-900 shadow-halo' : 'text-gray-500 hover:text-gray-900 bg-transparent'
+                }`}
+              >
+                Rectangle
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="border-2 border-gray-100 p-4 rounded-xl flex items-center justify-between opacity-50 cursor-not-allowed bg-gray-50 grayscale">
-                <span className="font-bold text-gray-800">Notes</span>
-                <span className="text-[10px] font-bold bg-gray-200 text-gray-600 px-2 py-1 rounded-full uppercase">Bientot</span>
-              </div>
-              <div className="border-2 border-gray-100 p-4 rounded-xl flex items-center justify-between opacity-50 cursor-not-allowed bg-gray-50 grayscale">
-                <span className="font-bold text-gray-800">Spotify</span>
-                <span className="text-[10px] font-bold bg-gray-200 text-gray-600 px-2 py-1 rounded-full uppercase">Bientot</span>
-              </div>
-              <div className="border-2 border-gray-100 p-4 rounded-xl flex items-center justify-between opacity-50 cursor-not-allowed bg-gray-50 grayscale">
-                <span className="font-bold text-gray-800">Map</span>
-                <span className="text-[10px] font-bold bg-gray-200 text-gray-600 px-2 py-1 rounded-full uppercase">Bientot</span>
-              </div>
-            </div>
           </div>
         </div>
       )}
+
     </div>
   );
 }
