@@ -96,7 +96,13 @@ exports.login = async (req, res) => {
     res.status(200).json({ 
         message: "Connexion réussie", 
         token, 
-        user: { id: user.id, name: user.name, email: user.email } 
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          avatar: user.avatar,
+          createdAt: user.createdAt,
+        }
     });
   } catch (error) {
     res.status(500).json({ message: "Erreur serveur", error: error.message });

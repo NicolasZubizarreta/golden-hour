@@ -26,7 +26,6 @@ export default function Profile() {
   const [isDeleting, setIsDeleting] = useState(false);
   const avatarInputRef = useRef(null);
 
-  // Remplir les champs avec les infos de l'utilisateur au chargement
   useEffect(() => {
     if (user) {
       setName(user.name || '');
@@ -36,10 +35,7 @@ export default function Profile() {
 
   const handleAvatarUpload = async (event) => {
     const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
     setAvatarMessage({ type: '', text: '' });
     setIsUploadingAvatar(true);
@@ -61,7 +57,6 @@ export default function Profile() {
     }
   };
 
-  // METTRE À JOUR LES INFOS (PUT /api/users/me)
   const handleUpdateInfo = async (e) => {
     e.preventDefault();
     setInfoMessage({ type: '', text: '' });
@@ -69,12 +64,8 @@ export default function Profile() {
 
     try {
       const { data } = await api.put('/users/me', { name, email });
-
-      // On met à jour le store Zustand avec les nouvelles infos (data.user)
       setUser(data.user);
       setInfoMessage({ type: 'success', text: 'Informations mises à jour avec succès.' });
-      
-      // On efface le message de succès après 3s
       setTimeout(() => setInfoMessage({ type: '', text: '' }), 3000);
     } catch (err) {
       setInfoMessage({ type: 'error', text: getApiErrorMessage(err, 'Erreur lors de la mise à jour.') });
@@ -83,7 +74,6 @@ export default function Profile() {
     }
   };
 
-  // METTRE À JOUR LE MOT DE PASSE (PUT /api/users/me/password)
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
     setPasswordMessage({ type: '', text: '' });
@@ -91,7 +81,6 @@ export default function Profile() {
 
     try {
       await api.put('/users/me/password', { oldPassword: currentPassword, newPassword });
-
       setPasswordMessage({ type: 'success', text: 'Mot de passe modifié avec succès.' });
       setCurrentPassword('');
       setNewPassword('');
@@ -103,7 +92,6 @@ export default function Profile() {
     }
   };
 
-  // SUPPRIMER LE COMPTE (DELETE /api/users/me)
   const handleDeleteAccount = async () => {
     if (!window.confirm("🚨 DANGER : Voulez-vous vraiment supprimer votre compte ? Cette action est IRRÉVERSIBLE et supprimera toutes vos données.")) {
       return;
@@ -112,10 +100,8 @@ export default function Profile() {
     setIsDeleting(true);
     try {
       await api.delete('/users/me');
-
-      // Si succès, on déconnecte l'utilisateur (qui efface le store et le localStorage)
       logout();
-      navigate('/'); // Retour à l'accueil public
+      navigate('/'); 
     } catch (err) {
       alert(getApiErrorMessage(err, 'Erreur lors de la suppression.'));
       setIsDeleting(false);
@@ -123,151 +109,210 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-3xl mx-auto">
-        {/* HEADER */}
-        <div className="mb-8">
-          <Link to="/hub" className="text-sm text-blue-500 hover:underline mb-4 inline-block">← Retour au Hub</Link>
-          <h1 className="text-3xl font-bold">Mon Profil</h1>
-          <p className="text-gray-500 mt-1">Gérez vos informations personnelles et la sécurité de votre compte.</p>
-        </div>
-
-        <div className="space-y-8">
+    <div className="relative min-h-screen flex flex-col bg-gradient-to-b from-golden-bg from-80% to-[#faeec5] font-inter text-golden-text">
+      
+      {/* =========================================
+          HEADER (py-32px + shadow-halo)
+      ========================================= */}
+      <header className="relative z-20 bg-golden-bg shadow-halo">
+        <div className="container-golden py-[32px] flex flex-col md:flex-row justify-between items-center gap-6">
           
-          {/* BLOC 1 : INFOS PERSONNELLES */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold mb-4">Informations Personnelles</h2>
+          {/* Avatar & Bonjour (Lien vers le Hub) */}
+          <Link to="/hub" className="flex items-center gap-4 hover:scale-[1.02] transition-transform cursor-pointer">
+            <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-200 shadow-halo flex items-center justify-center text-lg font-bold text-gray-500">
+              {user?.avatar ? (
+                <img src={getMediaUrl(user.avatar)} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                getInitials(user?.name || 'A')
+              )}
+            </div>
+            <h1 className="font-outfit font-black text-2xl uppercase tracking-wider text-gray-900">
+              Bonjour, {user?.name || 'Aventurier'} 👋
+            </h1>
+          </Link>
+          
+          {/* Actions (Déconnexion & Profil) */}
+          <div className="flex items-center gap-4">
+            <button onClick={logout} className="px-6 py-3 bg-red-100 text-red-500 font-bold rounded-full shadow-halo hover:bg-red-200 transition text-sm cursor-pointer">
+              Déconnexion
+            </button>
+            <Link to="/profile" className="w-12 h-12 bg-[#fef2cd] text-golden-primary shadow-halo rounded-full flex items-center justify-center hover:scale-105 transition-transform cursor-pointer">
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd"></path></svg>
+            </Link>
+          </div>
+        </div>
+      </header>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
-              <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 border border-gray-200 flex items-center justify-center text-2xl font-bold text-gray-600">
+      {/* =========================================
+          MAIN (py-48px)
+      ========================================= */}
+      <main className="flex-1 container-golden py-[48px] flex flex-col items-center justify-center">
+        
+        <div className="w-full max-w-lg space-y-8 flex flex-col items-center">
+          
+          {/* AVATAR UPLOAD SECTION */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="relative mb-4">
+              <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 shadow-halo border-4 border-golden-bg flex items-center justify-center text-3xl font-bold text-gray-500">
                 {user?.avatar ? (
-                  <img src={getMediaUrl(user.avatar)} alt={`Avatar de ${user.name}`} className="w-full h-full object-cover" />
+                  <img src={getMediaUrl(user.avatar)} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  getInitials(user?.name)
+                  getInitials(user?.name || 'A')
                 )}
               </div>
-
-              <div>
-                <input
-                  ref={avatarInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleAvatarUpload}
-                />
-                <button
-                  type="button"
-                  onClick={() => avatarInputRef.current?.click()}
-                  disabled={isUploadingAvatar}
-                  className="bg-yellow-400 text-gray-900 font-bold py-2 px-4 rounded-lg hover:bg-yellow-500 transition disabled:opacity-50"
-                >
-                  {isUploadingAvatar ? "Upload..." : "Changer l'avatar"}
-                </button>
-                <p className="text-xs text-gray-500 mt-2">Formats image uniquement, 5 MB maximum.</p>
-              </div>
+              <button
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={isUploadingAvatar}
+                className="absolute bottom-1 right-1 bg-golden-primary text-golden-text w-10 h-10 rounded-full flex items-center justify-center shadow-halo hover:scale-110 transition-transform cursor-pointer disabled:cursor-not-allowed"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+              </button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
             </div>
-
+            
+            <h2 className="text-3xl font-outfit font-black text-gray-900">Informations Personnelles</h2>
+            <p className="text-sm text-golden-muted">Gérez vos informations et préférences</p>
+            
             {avatarMessage.text && (
-              <div className={`p-3 rounded mb-4 text-sm ${avatarMessage.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+              <div className={`mt-4 p-3 rounded-2xl text-sm font-medium w-full text-center ${avatarMessage.type === 'error' ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-600 border border-green-200'}`}>
                 {avatarMessage.text}
               </div>
             )}
-            
+          </div>
+
+          {/* BLOC 1 : INFOS PERSONNELLES */}
+          <div className="bg-golden-card p-8 rounded-[2rem] shadow-halo w-full">
             {infoMessage.text && (
-              <div className={`p-3 rounded mb-4 text-sm ${infoMessage.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+              <div className={`p-3 rounded-2xl mb-6 text-sm text-center font-medium ${infoMessage.type === 'error' ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-600 border border-green-200'}`}>
                 {infoMessage.text}
               </div>
             )}
 
-            <form onSubmit={handleUpdateInfo} className="space-y-4 max-w-md">
+            <form onSubmit={handleUpdateInfo} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-                <input 
-                  type="text" 
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-yellow-400 focus:outline-none"
-                />
+                <label className="block text-xs font-bold text-golden-text uppercase tracking-wider mb-2">Nom</label>
+                <div className="relative flex items-center">
+                  <svg className="absolute left-4 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                  <input 
+                    type="text" 
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-golden-input shadow-creuse rounded-full py-3.5 pl-12 pr-5 text-golden-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-golden-primary transition-all text-sm"
+                  />
+                </div>
               </div>
+              
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input 
-                  type="email" 
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-yellow-400 focus:outline-none"
-                />
+                <label className="block text-xs font-bold text-golden-text uppercase tracking-wider mb-2">Email</label>
+                <div className="relative flex items-center">
+                  <svg className="absolute left-4 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                  <input 
+                    type="email" 
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-golden-input shadow-creuse rounded-full py-3.5 pl-12 pr-5 text-golden-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-golden-primary transition-all text-sm"
+                  />
+                </div>
               </div>
+              
               <button 
                 type="submit" 
                 disabled={isUpdatingInfo}
-                className="bg-gray-900 text-white font-bold py-2 px-6 rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
+                className="w-full bg-golden-primary text-golden-text font-bold text-sm py-4 rounded-full shadow-halo hover:scale-[1.02] transition-transform mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
               >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
                 {isUpdatingInfo ? 'Enregistrement...' : 'Enregistrer les modifications'}
               </button>
             </form>
           </div>
 
           {/* BLOC 2 : SÉCURITÉ */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold mb-4">Sécurité (Mot de passe)</h2>
-
+          <div className="bg-golden-card p-8 rounded-[2rem] shadow-halo w-full">
             {passwordMessage.text && (
-              <div className={`p-3 rounded mb-4 text-sm ${passwordMessage.type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+              <div className={`p-3 rounded-2xl mb-6 text-sm text-center font-medium ${passwordMessage.type === 'error' ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-600 border border-green-200'}`}>
                 {passwordMessage.text}
               </div>
             )}
 
-            <form onSubmit={handleUpdatePassword} className="space-y-4 max-w-md">
+            <form onSubmit={handleUpdatePassword} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe actuel</label>
-                <input 
-                  type="password" 
-                  required
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-yellow-400 focus:outline-none"
-                />
+                <label className="block text-xs font-bold text-golden-text uppercase tracking-wider mb-2">Mot de passe actuel</label>
+                <div className="relative flex items-center">
+                  <svg className="absolute left-4 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                  <input 
+                    type="password" 
+                    required
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full bg-golden-input shadow-creuse rounded-full py-3.5 pl-12 pr-5 text-golden-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-golden-primary transition-all text-sm"
+                  />
+                </div>
               </div>
+              
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nouveau mot de passe</label>
-                <input 
-                  type="password" 
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-yellow-400 focus:outline-none"
-                />
+                <label className="block text-xs font-bold text-golden-text uppercase tracking-wider mb-2">Nouveau mot de passe</label>
+                <div className="relative flex items-center">
+                  <svg className="absolute left-4 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                  <input 
+                    type="password" 
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full bg-golden-input shadow-creuse rounded-full py-3.5 pl-12 pr-5 text-golden-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-golden-primary transition-all text-sm"
+                  />
+                </div>
               </div>
+              
               <button 
                 type="submit" 
                 disabled={isUpdatingPassword}
-                className="bg-yellow-400 text-gray-900 font-bold py-2 px-6 rounded-lg hover:bg-yellow-500 transition disabled:opacity-50"
+                className="w-full bg-golden-primary text-golden-text font-bold text-sm py-4 rounded-full shadow-halo hover:scale-[1.02] transition-transform mt-2 flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
               >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
                 {isUpdatingPassword ? 'Modification...' : 'Changer le mot de passe'}
               </button>
             </form>
           </div>
 
           {/* BLOC 3 : ZONE DE DANGER */}
-          <div className="bg-red-50 p-6 rounded-xl border border-red-200">
-            <h2 className="text-xl font-bold text-red-700 mb-2">Zone de Danger</h2>
-            <p className="text-sm text-red-600 mb-4">
+          <div className="bg-[#ffcccc] p-8 rounded-[2rem] w-full text-center shadow-halo">
+            <h2 className="text-xl font-black text-red-600 mb-2 uppercase tracking-wide">Zone de Danger</h2>
+            <p className="text-xs font-bold text-red-600 mb-6 px-4">
               La suppression de votre compte est définitive. Toutes vos données (groupes créés, participation) seront effacées.
             </p>
             <button 
               onClick={handleDeleteAccount}
               disabled={isDeleting}
-              className="bg-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+              className="w-full bg-red-600 text-white font-bold text-sm py-4 rounded-full shadow-halo hover:bg-red-700 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed"
             >
-              {isDeleting ? 'Suppression en cours...' : 'Supprimer mon compte définitivement'}
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              {isDeleting ? 'Suppression...' : 'Supprimer mon compte définitivement'}
             </button>
           </div>
 
         </div>
-      </div>
+      </main>
+
+      {/* FOOTER TEXT */}
+      <footer className="w-full flex justify-center gap-6 text-xs font-bold text-golden-muted pb-10">
+        <Link to="/privacy" className="hover:text-golden-text flex items-center gap-1 cursor-pointer">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+          Sécurité
+        </Link>
+        <button onClick={logout} className="hover:text-golden-text flex items-center gap-1 cursor-pointer">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+          Déconnexion
+        </button>
+      </footer>
+
     </div>
   );
 }
