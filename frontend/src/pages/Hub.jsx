@@ -94,7 +94,7 @@ export default function Hub() {
           
           {/* Actions (Déconnexion & Profil) */}
           <div className="flex items-center gap-4">
-            <button onClick={logout} className="px-6 py-3 bg-red-100 text-red-500 font-bold rounded-full shadow-halo hover:bg-red-200 transition text-sm">
+            <button onClick={logout} className="px-6 py-3 bg-red-100 text-red-500 font-bold rounded-full shadow-halo hover:bg-red-200 transition text-sm cursor-pointer">
               Déconnexion
             </button>
             <Link to="/profile" className="w-12 h-12 bg-[#fef2cd] text-golden-primary shadow-halo rounded-full flex items-center justify-center hover:scale-105 transition-transform">
@@ -116,7 +116,7 @@ export default function Hub() {
           {/* CARTE : BOUTON CRÉER */}
           <button 
             onClick={() => setIsCreating(true)}
-            className="bg-[#fef2cd] border-[3px] border-dashed border-[#f4d783] rounded-[2.5rem] p-8 flex flex-col items-center justify-center text-center aspect-[4/3] hover:bg-[#fcebb6] transition-colors group shadow-halo"
+            className="bg-[#fef2cd] border-[3px] border-dashed border-[#f4d783] rounded-[2.5rem] p-8 flex flex-col items-center justify-center text-center aspect-[4/3] hover:bg-[#fcebb6] transition-colors group shadow-halo cursor-pointer"
           >
             {/* AJOUT DU SHADOW-HALO ICI */}
             <div className="w-16 h-16 bg-golden-primary rounded-full flex items-center justify-center mb-6 text-white group-hover:scale-110 transition-transform shadow-halo">
@@ -129,7 +129,7 @@ export default function Hub() {
           {/* CARTE : BOUTON REJOINDRE */}
           <button 
             onClick={() => setIsJoining(true)}
-            className="bg-white/60 border-[3px] border-dashed border-gray-300 rounded-[2.5rem] p-8 flex flex-col items-center justify-center text-center aspect-[4/3] hover:bg-white transition-colors group shadow-halo"
+            className="bg-white/60 border-[3px] border-dashed border-gray-300 rounded-[2.5rem] p-8 flex flex-col items-center justify-center text-center aspect-[4/3] hover:bg-white transition-colors group shadow-halo cursor-pointer"
           >
             {/* AJOUT DU SHADOW-HALO ICI */}
             <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-6 text-gray-500 group-hover:scale-110 transition-transform shadow-halo">
@@ -227,7 +227,7 @@ export default function Hub() {
                 </div>
               </div>
 
-              <button type="submit" className="w-full bg-golden-primary text-golden-text font-bold text-lg py-4 rounded-full shadow-halo hover:scale-[1.02] transition-transform mt-4 flex items-center justify-center gap-2">
+              <button type="submit" className="w-full bg-golden-primary text-golden-text font-bold text-lg py-4 rounded-full shadow-halo hover:scale-[1.02] transition-transform mt-4 flex items-center justify-center gap-2 cursor-pointer">
                 Créer le groupe <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
               </button>
             </form>
@@ -253,7 +253,7 @@ export default function Hub() {
                 </div>
               </div>
 
-              <button type="submit" className="w-full bg-gray-900 text-white font-bold text-lg py-4 rounded-full shadow-halo hover:scale-[1.02] transition-transform mt-4 flex items-center justify-center gap-2">
+              <button type="submit" className="w-full bg-gray-900 text-white font-bold text-lg py-4 rounded-full shadow-halo hover:scale-[1.02] transition-transform mt-4 flex items-center justify-center gap-2 cursor-pointer">
                 Rejoindre le groupe <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
               </button>
             </form>
