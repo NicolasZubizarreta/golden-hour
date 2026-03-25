@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@700;800&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -21,6 +21,20 @@
 @layer components {
   .container-golden {
     @apply w-full max-w-[1440px] mx-auto px-6 md:px-[48px];
+  }
+
+  .widget-edit-jiggle {
+    animation: widget-edit-jiggle 0.16s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes widget-edit-jiggle {
+  0% {
+    transform: rotate(-1.15deg);
+  }
+
+  100% {
+    transform: rotate(1.15deg);
   }
 }
 
@@ -45,3 +59,4 @@
     @apply font-outfit;
   }
 }
+

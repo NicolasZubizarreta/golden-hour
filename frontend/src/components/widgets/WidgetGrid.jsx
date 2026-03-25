@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import {
   closestCenter,
   DndContext,
@@ -27,18 +27,48 @@ export default function WidgetGrid({
   deletingWidgetId,
   onDeleteWidget,
   onReorderWidgets,
-  children // <-- AJOUT DU CHILDREN ICI
+  children,
 }) {
-  const canDrag = canManageWidgets && !isReordering;
   const [activeWidgetId, setActiveWidgetId] = useState(null);
   const [activeWidgetRect, setActiveWidgetRect] = useState(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 1030;
+  });
+  const [isMobileEditMode, setIsMobileEditMode] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const mediaQuery = window.matchMedia('(max-width: 1029px)');
+    const updateViewport = () => setIsMobileViewport(mediaQuery.matches);
+    updateViewport();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', updateViewport);
+      return () => mediaQuery.removeEventListener('change', updateViewport);
+    }
+
+    mediaQuery.addListener(updateViewport);
+    return () => mediaQuery.removeListener(updateViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileViewport || !canManageWidgets || widgets.length === 0) {
+      setIsMobileEditMode(false);
+    }
+  }, [canManageWidgets, isMobileViewport, widgets.length]);
+
+  const canDrag = canManageWidgets && !isReordering && (!isMobileViewport || isMobileEditMode);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
+      activationConstraint: { distance: isMobileViewport ? 4 : 8 },
     }),
     useSensor(TouchSensor, {
-      activationConstraint: { delay: 180, tolerance: 6 },
+      activationConstraint: isMobileViewport && isMobileEditMode
+        ? { delay: 0, tolerance: 8 }
+        : { delay: 180, tolerance: 6 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -84,6 +114,18 @@ export default function WidgetGrid({
     onReorderWidgets(reorderedWidgets, widgets);
   };
 
+  const handleEnterMobileEditMode = () => {
+    if (!isMobileViewport || !canManageWidgets || isReordering) return;
+    setIsMobileEditMode(true);
+  };
+
+  const handleGridPointerDown = (event) => {
+    if (!isMobileViewport || !isMobileEditMode) return;
+    if (event.target === event.currentTarget) {
+      setIsMobileEditMode(false);
+    }
+  };
+
   const collisionDetection = (args) => {
     const pointerHits = pointerWithin(args);
     if (pointerHits.length > 0) return pointerHits;
@@ -92,9 +134,11 @@ export default function WidgetGrid({
 
   const activeWidget = widgets.find((widget) => widget.id === activeWidgetId) || null;
 
-  // LA GRILLE UNIQUE : 2 colonnes avec 32px d'écart (gap-8)
   const gridContent = (
-    <div className="grid grid-cols-2 gap-8 w-full">
+    <div
+      className={`grid grid-cols-2 gap-8 w-full ${isMobileViewport && isMobileEditMode ? 'select-none' : ''}`}
+      onPointerDown={handleGridPointerDown}
+    >
       {widgets.map((widget) => (
         <SortableWidget
           key={widget.id}
@@ -103,10 +147,12 @@ export default function WidgetGrid({
           canDrag={canDrag}
           isActiveDrag={widget.id === activeWidgetId}
           isDeleting={deletingWidgetId === widget.id}
+          isMobileViewport={isMobileViewport}
+          isMobileEditMode={isMobileEditMode}
+          onEnterMobileEditMode={handleEnterMobileEditMode}
           onDelete={onDeleteWidget}
         />
       ))}
-      {/* LE BOUTON ADD WIDGET VA SE PLACER ICI, DANS LE FLUX NATUREL */}
       {children}
     </div>
   );
@@ -131,10 +177,18 @@ export default function WidgetGrid({
             style={activeWidgetRect ? { width: activeWidgetRect.width, height: activeWidgetRect.height } : undefined}
             className={activeWidget.size === 'RECT' ? 'max-w-none' : ''}
           >
-            <TestWidgetCard widget={activeWidget} canManageWidgets={false} canDrag={false} isDragging isDeleting={false} onDelete={() => {}} />
+            <TestWidgetCard
+              widget={activeWidget}
+              canManageWidgets={false}
+              canDrag={false}
+              isDragging
+              isDeleting={false}
+              onDelete={() => {}}
+            />
           </div>
         ) : null}
       </DragOverlay>
     </DndContext>
   );
 }
+

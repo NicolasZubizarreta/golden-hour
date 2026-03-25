@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+﻿import { Link } from 'react-router-dom';
 
 export default function Home() {
   return (
@@ -10,13 +10,13 @@ export default function Home() {
       <div className="flex gap-4">
         <Link 
           to="/login" 
-          className="px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition"
+          className="px-6 py-3 bg-gray-900 text-white rounded-golden shadow-halo hover:bg-gray-800 transition"
         >
           Se connecter
         </Link>
         <Link 
           to="/register" 
-          className="px-6 py-3 bg-yellow-400 text-gray-900 font-semibold rounded-lg hover:bg-yellow-500 transition"
+          className="px-6 py-3 bg-yellow-400 text-gray-900 font-semibold rounded-golden shadow-halo hover:bg-yellow-500 transition"
         >
           Créer un compte
         </Link>

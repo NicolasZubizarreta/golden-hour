@@ -1,4 +1,4 @@
-import { API_ORIGIN } from '../api/axiosConfig';
+﻿import { API_ORIGIN } from '../api/axiosConfig';
 
 export const getMediaUrl = (mediaPath) => {
   if (!mediaPath || typeof mediaPath !== 'string') {
@@ -28,3 +28,4 @@ export const getInitials = (name) => {
     .map((part) => part[0].toUpperCase())
     .join('');
 };
+
