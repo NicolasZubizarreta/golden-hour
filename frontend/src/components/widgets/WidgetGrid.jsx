@@ -18,7 +18,7 @@ import {
   sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import SortableWidget from './SortableWidget';
-import TestWidgetCard from './TestWidgetCard';
+import WidgetCard from './WidgetCard';
 
 export default function WidgetGrid({
   widgets,
@@ -26,6 +26,7 @@ export default function WidgetGrid({
   isReordering,
   deletingWidgetId,
   onDeleteWidget,
+  onEditWidget,
   onReorderWidgets,
   children,
 }) {
@@ -151,6 +152,7 @@ export default function WidgetGrid({
           isMobileEditMode={isMobileEditMode}
           onEnterMobileEditMode={handleEnterMobileEditMode}
           onDelete={onDeleteWidget}
+          onEdit={onEditWidget}
         />
       ))}
       {children}
@@ -177,7 +179,7 @@ export default function WidgetGrid({
             style={activeWidgetRect ? { width: activeWidgetRect.width, height: activeWidgetRect.height } : undefined}
             className={activeWidget.size === 'RECT' ? 'max-w-none' : ''}
           >
-            <TestWidgetCard
+            <WidgetCard
               widget={activeWidget}
               canManageWidgets={false}
               canDrag={false}
