@@ -50,13 +50,22 @@ const corsOptions = {
 
 // Middlewares globaux
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Branchement des routes
 app.use('/api/auth', authRoutes); 
 app.use('/api/groups', groupRoutes);
 app.use('/api/users', userRoutes);
+
+app.use((error, req, res, next) => {
+  if (error?.type === 'entity.too.large') {
+    return res.status(413).json({ message: 'Le fichier envoye est trop volumineux.' });
+  }
+
+  return next(error);
+});
 
 // Route de Health Check (Vérification serveur/BDD)
 app.get('/api/health', async (req, res) => {

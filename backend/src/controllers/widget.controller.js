@@ -1,22 +1,9 @@
 const prisma = require('../lib/prisma');
-
-const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'SPOTIFY', 'BUDGET', 'COUNTDOWN'];
-const WIDGET_SIZES = ['SQUARE', 'RECT'];
-
-const TEST_WIDGET_PRESETS = {
-  SQUARE: [
-    { title: 'Focus', subtitle: 'Widget test', background: '#F9A826', text: '#1F2937' },
-    { title: 'Ideas', subtitle: 'Widget test', background: '#8FD3F4', text: '#0F172A' },
-    { title: 'Night', subtitle: 'Widget test', background: '#1F3A5F', text: '#F8FAFC' },
-    { title: 'Pulse', subtitle: 'Widget test', background: '#FF6B6B', text: '#FFF7ED' },
-  ],
-  RECT: [
-    { title: 'Wide Flow', subtitle: 'Widget rectangle', background: '#0F766E', text: '#ECFEFF' },
-    { title: 'Weekend', subtitle: 'Widget rectangle', background: '#7C3AED', text: '#F5F3FF' },
-    { title: 'Sunset', subtitle: 'Widget rectangle', background: '#EA580C', text: '#FFF7ED' },
-    { title: 'Signal', subtitle: 'Widget rectangle', background: '#1D4ED8', text: '#EFF6FF' },
-  ],
-};
+const {
+  WIDGET_TYPES,
+  WIDGET_SIZES,
+  normalizeWidgetDataForPersist,
+} = require('../widgets/widgetRegistry');
 
 const parsePositiveInt = (value) => {
   if (typeof value === 'number' && Number.isInteger(value) && value > 0) {
@@ -49,16 +36,6 @@ const normalizeEnumValue = (value, allowedValues) => {
 
   const normalizedValue = value.trim().toUpperCase();
   return allowedValues.includes(normalizedValue) ? normalizedValue : null;
-};
-
-const buildDefaultTestData = (size, position) => {
-  const presets = TEST_WIDGET_PRESETS[size] || TEST_WIDGET_PRESETS.SQUARE;
-  const preset = presets[position % presets.length];
-
-  return {
-    ...preset,
-    badge: size === 'RECT' ? 'Rectangle' : 'Carre',
-  };
 };
 
 const getSortedWidgetsForGroup = (groupId) => prisma.widget.findMany({
@@ -105,18 +82,29 @@ exports.addWidget = async (req, res) => {
       return res.status(400).json({ message: `La taille du widget doit etre SQUARE ou RECT.` });
     }
 
-    if (req.body.data !== undefined && (typeof req.body.data !== 'object' || req.body.data === null || Array.isArray(req.body.data))) {
+    if (req.body.data !== undefined && (req.body.data === null || typeof req.body.data !== 'object' || Array.isArray(req.body.data))) {
       return res.status(400).json({ message: 'Le champ data doit etre un objet JSON.' });
     }
 
     const widgetsCount = await prisma.widget.count({ where: { groupId } });
+    const normalizedWidgetData = normalizeWidgetDataForPersist({
+      type: normalizedType,
+      size: normalizedSize,
+      rawData: req.body.data,
+      position: widgetsCount,
+    });
+
+    if (normalizedWidgetData.error) {
+      return res.status(400).json({ message: normalizedWidgetData.error });
+    }
+
     const widget = await prisma.widget.create({
       data: {
         groupId,
         type: normalizedType,
         size: normalizedSize,
         position: widgetsCount,
-        data: req.body.data ?? buildDefaultTestData(normalizedSize, widgetsCount),
+        data: normalizedWidgetData.data,
       },
     });
 
@@ -168,6 +156,76 @@ exports.deleteWidget = async (req, res) => {
 
     res.status(200).json({
       message: 'Widget supprime avec succes.',
+      widgets,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Erreur serveur.', error: error.message });
+  }
+};
+
+exports.updateWidget = async (req, res) => {
+  try {
+    const groupId = parsePositiveInt(req.params.id);
+    const widgetId = parsePositiveInt(req.params.widgetId);
+
+    if (groupId === null || widgetId === null) {
+      return res.status(400).json({ message: 'IDs invalides.' });
+    }
+
+    const existingWidget = await prisma.widget.findFirst({
+      where: { id: widgetId, groupId },
+      select: { id: true, type: true, size: true, data: true },
+    });
+
+    if (!existingWidget) {
+      return res.status(404).json({ message: 'Widget introuvable.' });
+    }
+
+    const normalizedType = req.body.type === undefined
+      ? existingWidget.type
+      : normalizeEnumValue(req.body.type, WIDGET_TYPES);
+    const normalizedSize = req.body.size === undefined
+      ? existingWidget.size
+      : normalizeEnumValue(req.body.size, WIDGET_SIZES);
+
+    if (!normalizedType) {
+      return res.status(400).json({ message: `Le type du widget doit etre parmi: ${WIDGET_TYPES.join(', ')}.` });
+    }
+
+    if (!normalizedSize) {
+      return res.status(400).json({ message: 'La taille du widget doit etre SQUARE ou RECT.' });
+    }
+
+    if (req.body.data !== undefined && (req.body.data === null || typeof req.body.data !== 'object' || Array.isArray(req.body.data))) {
+      return res.status(400).json({ message: 'Le champ data doit etre un objet JSON.' });
+    }
+
+    let widgetData = req.body.data === undefined ? existingWidget.data : req.body.data;
+    const normalizedWidgetData = normalizeWidgetDataForPersist({
+      type: normalizedType,
+      size: normalizedSize,
+      rawData: widgetData,
+    });
+
+    if (normalizedWidgetData.error) {
+      return res.status(400).json({ message: normalizedWidgetData.error });
+    }
+
+    const widget = await prisma.widget.update({
+      where: { id: widgetId },
+      data: {
+        type: normalizedType,
+        size: normalizedSize,
+        data: normalizedWidgetData.data,
+      },
+    });
+
+    const widgets = await getSortedWidgetsForGroup(groupId);
+
+    res.status(200).json({
+      message: 'Widget mis a jour avec succes.',
+      widget,
       widgets,
     });
   } catch (error) {

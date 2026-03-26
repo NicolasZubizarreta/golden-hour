@@ -5,6 +5,19 @@ import api, { getApiErrorMessage } from '../api/axiosConfig';
 import { getInitials, getMediaUrl } from '../utils/media';
 import WidgetGrid from '../components/widgets/WidgetGrid';
 import GroupMembersPanel from '../components/groups/GroupMembersPanel';
+import WidgetTypePicker from '../components/widgets/WidgetTypePicker';
+import {
+  canEditWidgetType,
+  createInitialWidgetDrafts,
+  getWidgetDefinition,
+  WIDGET_CATALOG,
+} from '../components/widgets/widgetRegistry';
+
+const normalizeSearchValue = (value = '') => value
+  .toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .trim();
 
 export default function Dashboard() {
   const { id } = useParams();
@@ -24,10 +37,34 @@ export default function Dashboard() {
   // États UI
   const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
   const [widgetSize, setWidgetSize] = useState('SQUARE');
+  const [selectedWidgetType, setSelectedWidgetType] = useState(null);
+  const [widgetSearch, setWidgetSearch] = useState('');
+  const [widgetModalError, setWidgetModalError] = useState('');
+  const [widgetDrafts, setWidgetDrafts] = useState(() => createInitialWidgetDrafts());
+  const [editingWidgetId, setEditingWidgetId] = useState(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [openMemberDropdownId, setOpenMemberDropdownId] = useState(null);
   
   const coverInputRef = useRef(null);
+
+  const resetWidgetModalState = () => {
+    setSelectedWidgetType(null);
+    setWidgetSearch('');
+    setWidgetModalError('');
+    setWidgetSize('SQUARE');
+    setWidgetDrafts(createInitialWidgetDrafts());
+    setEditingWidgetId(null);
+  };
+
+  const handleOpenWidgetModal = () => {
+    resetWidgetModalState();
+    setIsWidgetModalOpen(true);
+  };
+
+  const handleCloseWidgetModal = () => {
+    setIsWidgetModalOpen(false);
+    resetWidgetModalState();
+  };
 
   const fetchGroupDetails = async () => {
     const { data } = await api.get(`/groups/${id}`);
@@ -207,21 +244,127 @@ export default function Dashboard() {
     }
   };
 
-  const handleAddWidget = async (type) => {
+  const handleAddWidget = async (type, widgetData = null) => {
     setError('');
+    setWidgetModalError('');
     setActionLoading(`add-widget-${widgetSize}`);
     try {
-      const { data } = await api.post(`/groups/${id}/widgets`, {
+      const payload = {
         type: type, 
         size: widgetSize,
-      });
+      };
+
+      if (widgetData) {
+        payload.data = widgetData;
+      }
+
+      const { data } = await api.post(`/groups/${id}/widgets`, payload);
       setWidgets(data.widgets || []);
-      setIsWidgetModalOpen(false);
+      handleCloseWidgetModal();
     } catch (err) {
-      setError(getApiErrorMessage(err, "Impossible d'ajouter le widget."));
+      const message = getApiErrorMessage(err, "Impossible d'ajouter le widget.");
+      setError(message);
+      setWidgetModalError(message);
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleSelectWidgetType = (type) => {
+    const widgetDefinition = getWidgetDefinition(type);
+
+    if (!widgetDefinition?.enabled) {
+      return;
+    }
+
+    if (!widgetDefinition.formComponent) {
+      handleAddWidget(type);
+      return;
+    }
+
+    setSelectedWidgetType(type);
+    setWidgetModalError('');
+    setEditingWidgetId(null);
+  };
+
+  const handleStartEditWidget = (widget) => {
+    const widgetDefinition = getWidgetDefinition(widget?.type);
+
+    if (!widget || !canEditWidgetType(widget.type) || !widgetDefinition) {
+      return;
+    }
+
+    setWidgetModalError('');
+    setSelectedWidgetType(widget.type);
+    setWidgetSize(widget.size === 'RECT' ? 'RECT' : 'SQUARE');
+    setWidgetDrafts((previousDrafts) => ({
+      ...previousDrafts,
+      [widget.type]: widgetDefinition.createDraftFromData(widget.data),
+    }));
+    setEditingWidgetId(widget.id);
+    setIsWidgetModalOpen(true);
+  };
+
+  const handleWidgetDraftChange = (field, value) => {
+    if (!selectedWidgetType) {
+      return;
+    }
+
+    setWidgetModalError('');
+    setWidgetDrafts((previousDrafts) => ({
+      ...previousDrafts,
+      [selectedWidgetType]: {
+        ...previousDrafts[selectedWidgetType],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSubmitWidget = async (event) => {
+    event.preventDefault();
+
+    if (!selectedWidgetType) {
+      return;
+    }
+
+    const widgetDefinition = getWidgetDefinition(selectedWidgetType);
+
+    if (!widgetDefinition || typeof widgetDefinition.buildPayloadFromDraft !== 'function') {
+      setWidgetModalError("La configuration de ce widget n'est pas disponible.");
+      return;
+    }
+
+    const selectedWidgetDraft = widgetDrafts[selectedWidgetType];
+    const { payload, error: payloadError } = widgetDefinition.buildPayloadFromDraft(selectedWidgetDraft);
+
+    if (payloadError) {
+      setWidgetModalError(payloadError);
+      return;
+    }
+
+    if (editingWidgetId) {
+      setError('');
+      setWidgetModalError('');
+      setActionLoading(`edit-widget-${editingWidgetId}`);
+      try {
+        const { data } = await api.put(`/groups/${id}/widgets/${editingWidgetId}`, {
+          type: selectedWidgetType,
+          size: widgetSize,
+          data: payload,
+        });
+        setWidgets(data.widgets || []);
+        handleCloseWidgetModal();
+      } catch (err) {
+        const message = getApiErrorMessage(err, 'Impossible de mettre à jour le widget.');
+        setError(message);
+        setWidgetModalError(message);
+      } finally {
+        setActionLoading(null);
+      }
+      return;
+    }
+
+    await handleAddWidget(selectedWidgetType, payload);
   };
 
   const handleDeleteWidget = async (widgetId) => {
@@ -270,6 +413,18 @@ export default function Dashboard() {
   const canTransferOwnership = (member) => myRole === 'ADMIN' && member.role === 'EDITOR';
 
   const deletingWidgetId = actionLoading?.startsWith('delete-widget-') ? parseInt(actionLoading.replace('delete-widget-', ''), 10) : null;
+  const selectedWidgetDefinition = selectedWidgetType ? getWidgetDefinition(selectedWidgetType) : null;
+  const SelectedWidgetForm = selectedWidgetDefinition?.formComponent || null;
+  const selectedWidgetDraft = selectedWidgetType ? widgetDrafts[selectedWidgetType] : null;
+  const selectedWidgetModalMaxWidthClass = selectedWidgetDefinition?.modalMaxWidthClass || 'max-w-2xl';
+  const isSavingWidget = Boolean(
+    actionLoading?.startsWith('add-widget-') || actionLoading?.startsWith('edit-widget-')
+  );
+  const normalizedWidgetSearch = normalizeSearchValue(widgetSearch);
+  const filteredWidgetOptions = WIDGET_CATALOG.filter((option) => (
+    normalizedWidgetSearch === ''
+      || normalizeSearchValue(`${option.title} ${option.subtitle}`).includes(normalizedWidgetSearch)
+  ));
 
   return (
     <div
@@ -406,11 +561,12 @@ export default function Dashboard() {
               isReordering={actionLoading === 'widgets-reorder'}
               deletingWidgetId={deletingWidgetId}
               onDeleteWidget={handleDeleteWidget}
+              onEditWidget={handleStartEditWidget}
               onReorderWidgets={handleReorderWidgets}
             >
               {canManageTeam && (
                 <button
-                  onClick={() => setIsWidgetModalOpen(true)}
+                  onClick={handleOpenWidgetModal}
                   className="col-span-1 aspect-square self-start overflow-hidden bg-white/60 backdrop-blur-[10px] border-[3px] border-dashed border-gray-300 rounded-golden flex flex-col items-center justify-center p-4 sm:p-8 hover:bg-white transition group shadow-halo cursor-pointer w-full min-h-0"
                 >
                   <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gray-400 rounded-golden flex items-center justify-center text-white text-2xl sm:text-3xl font-light group-hover:scale-110 transition-transform mb-3 sm:mb-4 shadow-halo shrink-0">
@@ -446,98 +602,38 @@ export default function Dashboard() {
       ========================================= */}
       {isWidgetModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-golden p-8 w-full max-w-md shadow-halo relative flex flex-col items-center">
-            
-            {/* Bouton Fermer */}
-            <button onClick={() => setIsWidgetModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-800 transition cursor-pointer">
+          <div className={`bg-white rounded-golden p-8 w-full ${selectedWidgetModalMaxWidthClass} shadow-halo relative flex flex-col max-h-[min(860px,calc(100vh-32px))] overflow-hidden`}>
+
+            <button onClick={handleCloseWidgetModal} className="absolute top-6 right-6 text-gray-400 hover:text-gray-800 transition cursor-pointer">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
 
-            <h2 className="font-outfit font-black text-3xl text-gray-900 mb-6 w-full text-left">Ajouter un widget</h2>
-            
-            {/* Barre de recherche (shadow-creuse + bg-golden-input) */}
-            <div className="w-full relative mb-6">
-              <svg className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-              <input 
-                type="text" 
-                placeholder="Rechercher un widget..." 
-                className="w-full bg-golden-input shadow-creuse rounded-golden py-3.5 pl-12 pr-5 text-sm font-medium focus:outline-none text-golden-text placeholder-gray-400 transition-all" 
+            {SelectedWidgetForm ? (
+              <SelectedWidgetForm
+                draft={selectedWidgetDraft}
+                widgetSize={widgetSize}
+                modalError={widgetModalError}
+                isSubmitting={isSavingWidget}
+                isEditing={Boolean(editingWidgetId)}
+                onBack={() => {
+                  setSelectedWidgetType(null);
+                  setWidgetModalError('');
+                  setEditingWidgetId(null);
+                }}
+                onChange={handleWidgetDraftChange}
+                onSubmit={handleSubmitWidget}
               />
-            </div>
-
-            {/* Grille dynamique des options (1 colonne si RECT, 2 colonnes si SQUARE) */}
-            <div className={`grid gap-4 w-full mb-8 transition-all duration-300 ${widgetSize === 'SQUARE' ? 'grid-cols-2' : 'grid-cols-1'}`}>
-              
-              <button 
-                onClick={() => handleAddWidget('TEST')} 
-                className={`bg-[#4a89f3] text-white rounded-golden p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer ${widgetSize === 'SQUARE' ? 'aspect-square' : 'aspect-[2.08/1]'}`}
-              >
-                <div className="w-8 h-8 rounded-golden bg-white/20 flex items-center justify-center mb-auto shadow-halo">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
-                </div>
-                <h3 className="font-bold text-lg leading-tight mt-2">Weather</h3>
-                <p className="text-xs opacity-80">72° Clear Skies</p>
-              </button>
-              
-              <button 
-                onClick={() => handleAddWidget('TEST')} 
-                className={`bg-[#eaf4fc] text-[#00527c] rounded-golden p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer ${widgetSize === 'SQUARE' ? 'aspect-square' : 'aspect-[2.08/1]'}`}
-              >
-                <div className="w-8 h-8 rounded-golden bg-[#c6e4fa] flex items-center justify-center mb-auto shadow-halo">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-                </div>
-                <h3 className="font-bold text-lg leading-tight mt-2">Ideas</h3>
-                <p className="text-xs opacity-80">12 new entries</p>
-              </button>
-
-              {/* On n'affiche que 2 cartes quand on est en mode rectangle pour ne pas faire une modale trop haute */}
-              {widgetSize === 'SQUARE' && (
-                <>
-                  <button 
-                    onClick={() => handleAddWidget('TEST')} 
-                    className="bg-[#fbbf24] text-gray-900 rounded-golden p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer aspect-square"
-                  >
-                    <div className="w-8 h-8 rounded-golden bg-white/30 flex items-center justify-center mb-auto shadow-halo">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    </div>
-                    <h3 className="font-bold text-lg leading-tight mt-2">Focus</h3>
-                    <p className="text-xs opacity-80">Deep work: 2h</p>
-                  </button>
-
-                  <button 
-                    onClick={() => handleAddWidget('TEST')} 
-                    className="bg-[#4a89f3] text-white rounded-golden p-5 flex flex-col items-start hover:scale-[1.02] transition shadow-halo text-left cursor-pointer aspect-square"
-                  >
-                    <div className="w-8 h-8 rounded-golden bg-white/20 flex items-center justify-center mb-auto shadow-halo">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
-                    </div>
-                    <h3 className="font-bold text-lg leading-tight mt-2">Weather</h3>
-                    <p className="text-xs opacity-80">72° Clear Skies</p>
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* Switch Carré / Rectangle avec l'effet "Incrusté" */}
-            <div className="bg-golden-input shadow-creuse rounded-golden flex items-center w-full max-w-[280px]">
-              <button 
-                onClick={() => setWidgetSize('SQUARE')}
-                className={`flex-1 py-2.5 rounded-golden text-sm font-bold transition-all duration-300 cursor-pointer ${
-                  widgetSize === 'SQUARE' ? 'bg-golden-primary text-gray-900 shadow-halo' : 'text-gray-500 hover:text-gray-900 bg-transparent'
-                }`}
-              >
-                Carré
-              </button>
-              <button 
-                onClick={() => setWidgetSize('RECT')}
-                className={`flex-1 py-2.5 rounded-golden text-sm font-bold transition-all duration-300 cursor-pointer ${
-                  widgetSize === 'RECT' ? 'bg-golden-primary text-gray-900 shadow-halo' : 'text-gray-500 hover:text-gray-900 bg-transparent'
-                }`}
-              >
-                Rectangle
-              </button>
-            </div>
-
+            ) : (
+              <WidgetTypePicker
+                widgetSearch={widgetSearch}
+                onWidgetSearchChange={setWidgetSearch}
+                widgetModalError={widgetModalError}
+                filteredWidgetOptions={filteredWidgetOptions}
+                widgetSize={widgetSize}
+                onWidgetSizeChange={setWidgetSize}
+                onSelectWidgetType={handleSelectWidgetType}
+              />
+            )}
           </div>
         </div>
       )}

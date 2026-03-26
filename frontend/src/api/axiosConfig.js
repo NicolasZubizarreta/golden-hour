@@ -45,14 +45,14 @@ export const getApiErrorMessage = (error, fallbackMessage = 'Erreur de communica
     return 'Impossible de joindre le serveur. Vérifiez votre connexion ou réessayez.';
   }
 
-  if (typeof fallbackMessage === 'string' && fallbackMessage.trim()) {
-    return fallbackMessage;
-  }
-
   const status = error?.response?.status;
 
   if (status && statusMessages[status]) {
     return statusMessages[status];
+  }
+
+  if (typeof fallbackMessage === 'string' && fallbackMessage.trim()) {
+    return fallbackMessage;
   }
 
   if (
