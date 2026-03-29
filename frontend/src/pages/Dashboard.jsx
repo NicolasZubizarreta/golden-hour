@@ -335,7 +335,7 @@ export default function Dashboard() {
     }
 
     const selectedWidgetDraft = widgetDrafts[selectedWidgetType];
-    const { payload, error: payloadError } = widgetDefinition.buildPayloadFromDraft(selectedWidgetDraft);
+    const { payload, error: payloadError } = widgetDefinition.buildPayloadFromDraft(selectedWidgetDraft, widgetSize);
 
     if (payloadError) {
       setWidgetModalError(payloadError);

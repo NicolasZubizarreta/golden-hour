@@ -1,11 +1,18 @@
 import CountdownWidgetCard from './CountdownWidgetCard';
 import CountdownWidgetForm from './CountdownWidgetForm';
+import MusicWidgetCard from './MusicWidgetCard';
+import MusicWidgetForm from './MusicWidgetForm';
 import TestWidgetCard from './TestWidgetCard';
 import {
   buildCountdownPayloadFromDraft,
   createCountdownDraftFromData,
   createDefaultCountdownDraft,
 } from '../../utils/countdown';
+import {
+  buildMusicPayloadFromDraft,
+  createDefaultMusicDraft,
+  createMusicDraftFromData,
+} from '../../utils/musicWidget';
 
 const WIDGET_DEFINITIONS = [
   {
@@ -45,18 +52,22 @@ const WIDGET_DEFINITIONS = [
     ),
   },
   {
-    type: 'SPOTIFY',
-    title: 'Spotify',
-    subtitle: 'Bientôt disponible',
-    enabled: false,
-    surfaceClassName: 'bg-[#E8F8EE] text-[#166534]',
-    iconClassName: 'bg-white text-[#166534]',
-    previewValue: 'Bientôt',
-    modalMaxWidthClass: 'max-w-2xl',
-    cardComponent: TestWidgetCard,
+    type: 'MUSIC',
+    title: 'Musique',
+    subtitle: 'YouTube Music ou Deezer',
+    enabled: true,
+    surfaceClassName: 'bg-[linear-gradient(135deg,#0f172a_0%,#166534_38%,#7c3aed_100%)] text-white',
+    iconClassName: 'bg-white/18 text-white',
+    previewValue: 'Play',
+    modalMaxWidthClass: 'max-w-4xl',
+    cardComponent: MusicWidgetCard,
+    formComponent: MusicWidgetForm,
+    createDefaultDraft: createDefaultMusicDraft,
+    createDraftFromData: createMusicDraftFromData,
+    buildPayloadFromDraft: buildMusicPayloadFromDraft,
     renderCatalogIcon: () => (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M8 10c3.5-1 6.5-.667 9 1M7 14c3-1 5.667-.667 8 1M8 18c2-.5 3.667-.333 5 .5M12 3a9 9 0 100 18 9 9 0 000-18z"></path>
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9 18V6l10-2v12M9 18a2 2 0 11-4 0 2 2 0 014 0zm10-2a2 2 0 11-4 0 2 2 0 014 0z"></path>
       </svg>
     ),
   },

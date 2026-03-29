@@ -7,6 +7,7 @@ export default function SortableWidget({
   canManageWidgets,
   canDrag,
   isActiveDrag,
+  disableContentInteraction = false,
   isDeleting,
   isMobileViewport,
   isMobileEditMode,
@@ -57,6 +58,7 @@ export default function SortableWidget({
         dragListeners={listeners}
         isDragging={isDragging}
         isDeleting={isDeleting}
+        disableContentInteraction={disableContentInteraction}
         onDelete={() => onDelete(widget.id)}
         canEdit={canEditWidget}
         onEdit={() => onEdit(widget)}

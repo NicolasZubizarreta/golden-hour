@@ -94,7 +94,7 @@ enum WidgetType {
   TEST
   NOTES
   MAP
-  SPOTIFY
+  MUSIC
   BUDGET
   COUNTDOWN
 }

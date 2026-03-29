@@ -1,8 +1,9 @@
-const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'SPOTIFY', 'BUDGET', 'COUNTDOWN'];
+const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN'];
 const WIDGET_SIZES = ['SQUARE', 'RECT'];
 const COUNTDOWN_TYPES = ['SINGLE', 'RECURRING'];
 const COUNTDOWN_FREQUENCIES = ['WEEKLY', 'MONTHLY_FIRST'];
 const COUNTDOWN_APPEARANCE_TYPES = ['COLOR', 'IMAGE'];
+const MUSIC_PLATFORMS = ['YOUTUBE_MUSIC', 'DEEZER'];
 
 const TEST_WIDGET_PRESETS = {
   SQUARE: [
@@ -21,6 +22,13 @@ const TEST_WIDGET_PRESETS = {
 
 const isPlainObject = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
 const normalizeTrimmedString = (value) => typeof value === 'string' ? value.trim() : '';
+const fetchUrl = (...args) => {
+  if (typeof fetch !== 'function') {
+    return Promise.reject(new Error('Fetch indisponible.'));
+  }
+
+  return fetch(...args);
+};
 
 const normalizeEnumValue = (value, allowedValues) => {
   if (typeof value !== 'string') {
@@ -194,6 +202,160 @@ const normalizeCountdownData = (value) => {
   };
 };
 
+const parseMusicUrl = (platform, rawUrl) => {
+  const normalizedUrl = normalizeTrimmedString(rawUrl);
+
+  if (!normalizedUrl) {
+    return null;
+  }
+
+  if (platform === 'YOUTUBE_MUSIC') {
+    try {
+      const parsedUrl = new URL(normalizedUrl);
+      const hostname = parsedUrl.hostname.toLowerCase();
+      const pathname = parsedUrl.pathname;
+      const videoId = hostname === 'youtu.be'
+        ? pathname.replace(/^\/+/, '')
+        : parsedUrl.searchParams.get('v');
+      const playlistId = parsedUrl.searchParams.get('list');
+      const isYouTubeHost = (
+        hostname === 'music.youtube.com'
+        || hostname === 'www.youtube.com'
+        || hostname === 'youtube.com'
+        || hostname === 'youtu.be'
+        || hostname === 'm.youtube.com'
+      );
+
+      if (!isYouTubeHost) {
+        return null;
+      }
+
+      if ((pathname === '/playlist' || !videoId) && typeof playlistId === 'string' && /^[A-Za-z0-9_-]+$/.test(playlistId)) {
+        return `https://music.youtube.com/playlist?list=${playlistId}`;
+      }
+
+      if (typeof videoId === 'string' && /^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+        return `https://music.youtube.com/watch?v=${videoId}`;
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  }
+
+  if (platform === 'DEEZER') {
+    const deezerSharePattern = /^https?:\/\/(?:www\.)?deezer\.com\/(?:[a-z]{2}\/)?([a-z]+)\/(\d+)(?:\?.*)?$/i;
+    const deezerEmbedPattern = /^https?:\/\/widget\.deezer\.com\/widget\/(?:dark|light)\/([a-z]+)\/(\d+)(?:\?.*)?$/i;
+    const deezerMatch = normalizedUrl.match(deezerSharePattern) || normalizedUrl.match(deezerEmbedPattern);
+
+    if (!deezerMatch) {
+      return null;
+    }
+
+    const resourceType = deezerMatch[1].toLowerCase();
+    const resourceId = deezerMatch[2];
+
+    if (!['track', 'playlist', 'album', 'artist'].includes(resourceType)) {
+      return null;
+    }
+
+    return `https://www.deezer.com/${resourceType}/${resourceId}`;
+  }
+
+  return null;
+};
+
+const normalizeMusicData = (value) => {
+  if (!isPlainObject(value)) {
+    return { error: 'La configuration du widget musique est invalide.' };
+  }
+
+  const platform = normalizeEnumValue(value.platform, MUSIC_PLATFORMS);
+
+  if (!platform) {
+    return { error: 'La plateforme du widget musique est invalide.' };
+  }
+
+  return normalizeMusicDataByPlatform(platform, value.url);
+};
+
+const getHostname = (rawUrl) => {
+  try {
+    return new URL(rawUrl).hostname.toLowerCase();
+  } catch {
+    return '';
+  }
+};
+
+const isResolvableDeezerShortUrl = (rawUrl) => {
+  const hostname = getHostname(rawUrl);
+
+  return (
+    hostname === 'deezer.page.link'
+    || hostname === 'dzr.page.link'
+    || hostname === 'link.deezer.com'
+  );
+};
+
+const resolveRedirectUrl = async (rawUrl) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 7000);
+
+  try {
+    const response = await fetchUrl(rawUrl, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: controller.signal,
+      headers: {
+        'user-agent': 'GoldenHour/1.0',
+      },
+    });
+
+    return typeof response?.url === 'string' ? response.url : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+const normalizeMusicDataByPlatform = async (platform, rawUrl) => {
+  const normalizedUrl = parseMusicUrl(platform, rawUrl);
+
+  if (!normalizedUrl) {
+    const canResolveShortUrl = (
+      platform === 'DEEZER' && isResolvableDeezerShortUrl(rawUrl)
+    );
+
+    if (canResolveShortUrl) {
+      const resolvedUrl = await resolveRedirectUrl(rawUrl);
+
+      if (resolvedUrl) {
+        const redirectedUrl = parseMusicUrl(platform, resolvedUrl);
+
+        if (redirectedUrl) {
+          return {
+            data: {
+              platform,
+              url: redirectedUrl,
+            },
+          };
+        }
+      }
+    }
+
+    return { error: 'Le lien du widget musique est invalide pour cette plateforme.' };
+  }
+
+  return {
+    data: {
+      platform,
+      url: normalizedUrl,
+    },
+  };
+};
+
 const buildDefaultTestData = (size, position) => {
   const presets = TEST_WIDGET_PRESETS[size] || TEST_WIDGET_PRESETS.SQUARE;
   const preset = presets[position % presets.length];
@@ -213,9 +375,14 @@ const WIDGET_TYPE_DEFINITIONS = {
     requiredDataMessage: 'Le widget COUNTDOWN doit contenir une configuration.',
     normalizeData: normalizeCountdownData,
   },
+  MUSIC: {
+    requiresData: true,
+    requiredDataMessage: 'Le widget MUSIC doit contenir une configuration.',
+    normalizeData: normalizeMusicData,
+  },
 };
 
-const normalizeWidgetDataForPersist = ({ type, size, rawData, position = 0 }) => {
+const normalizeWidgetDataForPersist = async ({ type, size, rawData, position = 0 }) => {
   if (rawData !== undefined && rawData !== null && !isPlainObject(rawData)) {
     return { error: 'Le champ data doit etre un objet JSON.' };
   }
@@ -227,7 +394,7 @@ const normalizeWidgetDataForPersist = ({ type, size, rawData, position = 0 }) =>
       return { error: definition.requiredDataMessage };
     }
 
-    return definition.normalizeData(rawData);
+    return definition.normalizeData(rawData, { size, position });
   }
 
   if (rawData !== undefined && rawData !== null) {
