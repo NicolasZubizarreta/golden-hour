@@ -87,7 +87,7 @@ exports.addWidget = async (req, res) => {
     }
 
     const widgetsCount = await prisma.widget.count({ where: { groupId } });
-    const normalizedWidgetData = normalizeWidgetDataForPersist({
+    const normalizedWidgetData = await normalizeWidgetDataForPersist({
       type: normalizedType,
       size: normalizedSize,
       rawData: req.body.data,
@@ -202,7 +202,7 @@ exports.updateWidget = async (req, res) => {
     }
 
     let widgetData = req.body.data === undefined ? existingWidget.data : req.body.data;
-    const normalizedWidgetData = normalizeWidgetDataForPersist({
+    const normalizedWidgetData = await normalizeWidgetDataForPersist({
       type: normalizedType,
       size: normalizedSize,
       rawData: widgetData,

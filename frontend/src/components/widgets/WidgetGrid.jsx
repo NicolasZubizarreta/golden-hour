@@ -134,6 +134,7 @@ export default function WidgetGrid({
   };
 
   const activeWidget = widgets.find((widget) => widget.id === activeWidgetId) || null;
+  const shouldDisableInteractiveContent = Boolean(activeWidgetId) || (isMobileViewport && canManageWidgets);
 
   const gridContent = (
     <div
@@ -147,6 +148,7 @@ export default function WidgetGrid({
           canManageWidgets={canManageWidgets}
           canDrag={canDrag}
           isActiveDrag={widget.id === activeWidgetId}
+          disableContentInteraction={shouldDisableInteractiveContent}
           isDeleting={deletingWidgetId === widget.id}
           isMobileViewport={isMobileViewport}
           isMobileEditMode={isMobileEditMode}
