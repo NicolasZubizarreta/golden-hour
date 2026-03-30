@@ -143,7 +143,7 @@ export default function Home() {
             </div>
 
             <div className="absolute -bottom-8 lg:-bottom-32 right-4 lg:right-6 rotate-6 bg-white p-3 lg:p-4 pb-8 lg:pb-10 shadow-xl w-28 lg:w-64 flex flex-col gap-2 lg:gap-3">
-              <div className="w-full h-20 lg:h-52 bg-blue-100/60 rounded-sm" />
+              <img src="/summer24.jpg" alt="Summer 24" className="w-full h-20 lg:h-52 object-cover rounded-sm" />
               <p className="text-xs font-inter font-bold text-golden-text tracking-widest uppercase text-center">
                 Summer '24
               </p>
@@ -223,11 +223,11 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
 
           <div className="flex flex-col gap-6">
-            <div className="bg-[#FDEAE4] rounded-3xl flex items-center justify-center overflow-hidden" style={{ aspectRatio: '9/10' }}>
+            <div className="bg-[#FDEAE4] rounded-3xl flex items-center justify-center overflow-hidden p-6" style={{ aspectRatio: '9/10' }}>
               <img
-                src="/mockup-phone.png"
+                src="/mockup-iphone.png"
                 alt="Hub centralisé"
-                className="h-4/5 w-auto drop-shadow-xl"
+                className="w-auto h-full object-contain drop-shadow-2xl"
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
             </div>
