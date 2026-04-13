@@ -370,15 +370,15 @@ export default function Home() {
           <div className="flex gap-16">
             <div className="flex flex-col gap-4">
               <p className="font-outfit font-extrabold uppercase text-golden-primary text-xs tracking-[0.2em]">Produit</p>
-              <a href="#" className="text-white/60 hover:text-white text-sm transition">Confidentialité</a>
-              <a href="#" className="text-white/60 hover:text-white text-sm transition">Mentions légales</a>
-              <a href="#" className="text-white/60 hover:text-white text-sm transition">Sécurité</a>
+              <button type="button" className="text-white/60 hover:text-white text-sm transition text-left">Confidentialité</button>
+              <button type="button" className="text-white/60 hover:text-white text-sm transition text-left">Mentions légales</button>
+              <button type="button" className="text-white/60 hover:text-white text-sm transition text-left">Sécurité</button>
             </div>
             <div className="flex flex-col gap-4">
               <p className="font-outfit font-extrabold uppercase text-golden-primary text-xs tracking-[0.2em]">Réseaux</p>
-              <a href="#" className="text-white/60 hover:text-white text-sm transition">Twitter</a>
-              <a href="#" className="text-white/60 hover:text-white text-sm transition">Instagram</a>
-              <a href="#" className="text-white/60 hover:text-white text-sm transition">Discord</a>
+              <button type="button" className="text-white/60 hover:text-white text-sm transition text-left">Twitter</button>
+              <button type="button" className="text-white/60 hover:text-white text-sm transition text-left">Instagram</button>
+              <button type="button" className="text-white/60 hover:text-white text-sm transition text-left">Discord</button>
             </div>
           </div>
 
