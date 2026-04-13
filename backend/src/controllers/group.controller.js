@@ -158,7 +158,48 @@ exports.getGroupById = async (req, res) => {
   }
 };
 
-// --- 4. METTRE À JOUR LE FOND D'ÉCRAN DU GROUPE (POST /:id/cover) ---
+// --- 4. METTRE A JOUR LE NOM DU GROUPE (PUT /:id) ---
+exports.updateGroup = async (req, res) => {
+  try {
+    const groupId = parsePositiveInt(req.params.id);
+    const { name } = req.body;
+
+    if (groupId === null) {
+      return res.status(400).json({ message: "ID du groupe invalide." });
+    }
+
+    if (typeof name !== 'string' || name.trim() === '') {
+      return res.status(400).json({ message: "Le nom du groupe est obligatoire." });
+    }
+
+    const updatedGroup = await prisma.group.update({
+      where: { id: groupId },
+      data: { name: name.trim() },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        inviteCode: true,
+        coverImage: true,
+        createdById: true,
+      },
+    });
+
+    res.status(200).json({
+      message: "Nom du groupe mis a jour avec succes.",
+      group: updatedGroup,
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: "Groupe introuvable." });
+    }
+
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur.", error: error.message });
+  }
+};
+
+// --- 5. METTRE À JOUR LE FOND D'ÉCRAN DU GROUPE (POST /:id/cover) ---
 exports.uploadCover = async (req, res) => {
   const groupId = parsePositiveInt(req.params.id);
   const newCoverPath = getCoverPublicPath(req.file);

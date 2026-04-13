@@ -1,0 +1,10 @@
+ALTER TABLE `Widget`
+MODIFY `type` ENUM(
+  'TEST',
+  'NOTES',
+  'MAP',
+  'SPOTIFY',
+  'MUSIC',
+  'BUDGET',
+  'COUNTDOWN'
+) NOT NULL DEFAULT 'TEST';

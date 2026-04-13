@@ -15,15 +15,57 @@ const { ensureUploadDirectories } = require('./utils/uploads');
 const app = express();
 ensureUploadDirectories();
 
+const getAllowedOrigins = () => {
+  const rawOrigins = process.env.CORS_ALLOWED_ORIGINS || process.env.FRONTEND_URL || 'http://localhost:5173';
+
+  return rawOrigins
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+    .map((origin) => {
+      try {
+        return new URL(origin).origin;
+      } catch {
+        return origin.replace(/\/+$/, '');
+      }
+    });
+};
+
+const allowedOrigins = getAllowedOrigins();
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Origin not allowed by CORS.'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
 // Middlewares globaux
-app.use(cors());
-app.use(express.json());
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Branchement des routes
 app.use('/api/auth', authRoutes); 
 app.use('/api/groups', groupRoutes);
 app.use('/api/users', userRoutes);
+
+app.use((error, req, res, next) => {
+  if (error?.type === 'entity.too.large') {
+    return res.status(413).json({ message: 'Le fichier envoye est trop volumineux.' });
+  }
+
+  return next(error);
+});
 
 // Route de Health Check (Vérification serveur/BDD)
 app.get('/api/health', async (req, res) => {
@@ -38,4 +80,4 @@ app.get('/api/health', async (req, res) => {
 
 // Lancement du serveur
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Serveur sur http://localhost:${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Serveur réseau ouvert sur le port ${PORT}`));

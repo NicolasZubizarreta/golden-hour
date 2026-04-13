@@ -11,7 +11,7 @@ Golden Hour est une application web full-stack d'organisation de voyages et de s
 ## 🧩 Widgets (En cours de développement)
 - **Carte (Map) :** Ajoutez vos destinations prévues ou visitées (Leaflet).
 - **Notes :** Post-its collaboratifs en temps réel.
-- **Spotify :** Lecteur musical intégré et playlist partagée du groupe.
+- **YouTube Music & Deezer :** Lecteur musical intégré et playlists partagées du groupe.
 - **Budget & Countdown :** Suivi des dépenses et compte à rebours avant le départ.
 
 ## 🛠️ Stack Technique

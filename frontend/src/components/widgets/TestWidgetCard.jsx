@@ -1,3 +1,5 @@
+import WidgetCardShell from './WidgetCardShell';
+
 const getWidgetText = (widget) => {
   const fallbackTitle = widget.size === 'RECT' ? 'Widget Large' : 'Widget Test';
   const fallbackSubtitle = widget.size === 'RECT' ? 'Deux colonnes' : 'Une colonne';
@@ -21,66 +23,25 @@ const getWidgetText = (widget) => {
   };
 };
 
-export default function TestWidgetCard({
-  widget,
-  canManageWidgets,
-  canDrag,
-  dragAttributes,
-  dragListeners,
-  isDragging,
-  isDeleting,
-  onDelete,
-}) {
+export default function TestWidgetCard(props) {
+  const { widget } = props;
   const content = getWidgetText(widget);
 
   return (
-    <article
-      className={`relative h-full overflow-hidden rounded-[28px] border border-white/25 p-4 shadow-lg transition ${isDragging ? 'scale-[1.02] shadow-2xl' : 'shadow-black/10'}`}
+    <WidgetCardShell
+      {...props}
+      typeLabel={widget.type}
       style={{
         background: content.background,
         color: content.text,
       }}
+      overlay={<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.28),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.2),transparent_35%)] pointer-events-none" />}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.28),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.2),transparent_35%)]" />
-
-      <div className="relative z-10 flex h-full flex-col">
-        <div className="flex items-start justify-between gap-3">
-          <div className="rounded-full bg-black/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.24em] backdrop-blur-sm">
-            {widget.type}
-          </div>
-
-          {canManageWidgets && (
-            <div className="flex items-center gap-2">
-              {canDrag && (
-                <button
-                  type="button"
-                  className="rounded-full bg-black/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] backdrop-blur-sm cursor-grab active:cursor-grabbing"
-                  aria-label="Deplacer le widget"
-                  {...dragAttributes}
-                  {...dragListeners}
-                >
-                  Drag
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={onDelete}
-                onPointerDown={(event) => event.stopPropagation()}
-                disabled={isDeleting}
-                className="rounded-full bg-black/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.24em] backdrop-blur-sm disabled:opacity-50"
-              >
-                {isDeleting ? '...' : 'Delete'}
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-auto">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] opacity-75">{content.badge}</p>
-          <h3 className="mt-2 text-2xl font-semibold leading-tight">{content.title}</h3>
-          <p className="mt-2 max-w-[16rem] text-sm opacity-85">{content.subtitle}</p>
-        </div>
+      <div className="mt-auto">
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] opacity-75">{content.badge}</p>
+        <h3 className="mt-2 text-2xl font-black leading-tight tracking-wide">{content.title}</h3>
+        <p className="mt-2 max-w-[16rem] text-sm opacity-85 font-medium">{content.subtitle}</p>
       </div>
-    </article>
+    </WidgetCardShell>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import useAuthStore from './store/authStore';
 import api from './api/axiosConfig';
@@ -12,6 +12,7 @@ import Profile from './pages/Profile';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
+import DashboardMobileSettings from './pages/DashboardMobileSettings';
 
 // --- COMPOSANT DE SÉCURITÉ ---
 const PrivateRoute = ({ children, isHydratingUser }) => {
@@ -105,9 +106,18 @@ function App() {
             </PrivateRoute>
           } 
         />
+        <Route 
+          path="/group/:id/mobile-settings" 
+          element={
+            <PrivateRoute isHydratingUser={isHydratingUser}>
+              <DashboardMobileSettings />
+            </PrivateRoute>
+          } 
+        />
       </Routes>
     </div>
   );
 }
 
 export default App;
+
