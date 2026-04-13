@@ -59,7 +59,7 @@ export default function Home() {
 
         <div className="w-full lg:flex-1 relative flex items-center justify-center px-6 lg:px-0" style={{ minHeight: '480px' }}>
 
-          <div className="w-full h-130 bg-golden-card rounded-4xl shadow-halo relative overflow-visible">
+          <div className="w-full h-[32.5rem] bg-golden-card rounded-4xl shadow-halo relative overflow-visible">
 
             <div className="absolute -top-4 right-6 flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-halo text-sm font-inter text-golden-text">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FBBD23" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
