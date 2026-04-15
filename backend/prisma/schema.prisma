@@ -22,8 +22,9 @@ model User {
   resetPasswordExpires DateTime?
   
   // Relations
-  groups        GroupMember[] // Lien vers les groupes auxquels l'utilisateur appartient
-  createdGroups Group[]       @relation("GroupCreator")
+  groups         GroupMember[] // Lien vers les groupes auxquels l'utilisateur appartient
+  createdGroups  Group[]       @relation("GroupCreator")
+  assignedTasks  Task[]        @relation("AssignedTasks")
 }
 
 // -----------------------------------------------------------------------------
@@ -86,8 +87,23 @@ model Widget {
   isActive  Boolean    @default(true)
 
   group     Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  tasks     Task[]
 
   @@index([groupId, position])
+}
+
+model Task {
+  id           Int      @id @default(autoincrement())
+  widgetId     Int
+  title        String
+  isCompleted  Boolean  @default(false)
+  assignedToId Int?
+  createdAt    DateTime @default(now())
+
+  widget       Widget   @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  assignee     User?    @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([widgetId])
 }
 
 enum WidgetType {
@@ -97,6 +113,7 @@ enum WidgetType {
   MUSIC
   BUDGET
   COUNTDOWN
+  TODO
 }
 
 enum WidgetSize {
