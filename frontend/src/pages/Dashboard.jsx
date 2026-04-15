@@ -557,6 +557,7 @@ export default function Dashboard() {
           <div className="flex-1 flex flex-col">
             <WidgetGrid
               widgets={widgets}
+              groupMembers={group.members || []}
               canManageWidgets={canManageTeam}
               isReordering={actionLoading === 'widgets-reorder'}
               deletingWidgetId={deletingWidgetId}

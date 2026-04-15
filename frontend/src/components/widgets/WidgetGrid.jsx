@@ -22,6 +22,7 @@ import WidgetCard from './WidgetCard';
 
 export default function WidgetGrid({
   widgets,
+  groupMembers = [],
   canManageWidgets,
   isReordering,
   deletingWidgetId,
@@ -145,6 +146,7 @@ export default function WidgetGrid({
         <SortableWidget
           key={widget.id}
           widget={widget}
+          groupMembers={groupMembers}
           canManageWidgets={canManageWidgets}
           canDrag={canDrag}
           isActiveDrag={widget.id === activeWidgetId}
