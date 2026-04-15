@@ -4,6 +4,7 @@ import { canEditWidgetType } from './widgetRegistry';
 
 export default function SortableWidget({
   widget,
+  groupMembers = [],
   canManageWidgets,
   canDrag,
   isActiveDrag,
@@ -47,6 +48,7 @@ export default function SortableWidget({
     >
       <WidgetCard
         widget={widget}
+        groupMembers={groupMembers}
         canManageWidgets={canManageWidgets}
         canDrag={canDrag}
         isMobileViewport={isMobileViewport}

@@ -3,6 +3,8 @@ import CountdownWidgetForm from './CountdownWidgetForm';
 import MusicWidgetCard from './MusicWidgetCard';
 import MusicWidgetForm from './MusicWidgetForm';
 import TestWidgetCard from './TestWidgetCard';
+import ToDoWidgetCard from './ToDoWidgetCard';
+import ToDoWidgetForm from './ToDoWidgetForm';
 import {
   buildCountdownPayloadFromDraft,
   createCountdownDraftFromData,
@@ -13,6 +15,11 @@ import {
   createDefaultMusicDraft,
   createMusicDraftFromData,
 } from '../../utils/musicWidget';
+import {
+  buildTodoPayloadFromDraft,
+  createDefaultTodoDraft,
+  createTodoDraftFromData,
+} from '../../utils/todoWidget';
 
 const WIDGET_DEFINITIONS = [
   {
@@ -68,6 +75,26 @@ const WIDGET_DEFINITIONS = [
     renderCatalogIcon: () => (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9 18V6l10-2v12M9 18a2 2 0 11-4 0 2 2 0 014 0zm10-2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+      </svg>
+    ),
+  },
+  {
+    type: 'TODO',
+    title: 'Liste de tâches',
+    subtitle: 'Tâches assignables aux membres',
+    enabled: true,
+    surfaceClassName: 'bg-[linear-gradient(135deg,#052E16_0%,#16A34A_55%,#15803D_100%)] text-[#F0FDF4]',
+    iconClassName: 'bg-white/18 text-white',
+    previewValue: 'Tâches',
+    modalMaxWidthClass: 'max-w-4xl',
+    cardComponent: ToDoWidgetCard,
+    formComponent: ToDoWidgetForm,
+    createDefaultDraft: createDefaultTodoDraft,
+    createDraftFromData: createTodoDraftFromData,
+    buildPayloadFromDraft: buildTodoPayloadFromDraft,
+    renderCatalogIcon: () => (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
       </svg>
     ),
   },
