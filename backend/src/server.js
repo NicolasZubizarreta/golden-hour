@@ -1,17 +1,16 @@
-// Imports des modules externes
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
-// Imports internes (BDD et Routes)
 const prisma = require('./lib/prisma');
-const authRoutes = require('./routes/auth.routes'); 
+const authRoutes = require('./routes/auth.routes');
 const groupRoutes = require('./routes/group.routes');
 const userRoutes = require('./routes/user.routes');
+const widgetTaskRoutes = require('./routes/widgetTask.routes');
+const taskRoutes = require('./routes/task.routes');
 const { ensureUploadDirectories } = require('./utils/uploads');
 
-// Initialisation de l'app
 const app = express();
 ensureUploadDirectories();
 
@@ -44,7 +43,7 @@ const corsOptions = {
 
     return callback(new Error('Origin not allowed by CORS.'));
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
@@ -55,9 +54,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Branchement des routes
-app.use('/api/auth', authRoutes); 
+app.use('/api/auth', authRoutes);
 app.use('/api/groups', groupRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/widgets', widgetTaskRoutes);
+app.use('/api/tasks', taskRoutes);
 
 app.use((error, req, res, next) => {
   if (error?.type === 'entity.too.large') {

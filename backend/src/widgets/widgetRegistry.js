@@ -1,4 +1,4 @@
-const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN'];
+const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN', 'TODO'];
 const WIDGET_SIZES = ['SQUARE', 'RECT'];
 const COUNTDOWN_TYPES = ['SINGLE', 'RECURRING'];
 const COUNTDOWN_FREQUENCIES = ['WEEKLY', 'MONTHLY_FIRST'];
@@ -366,6 +366,19 @@ const buildDefaultTestData = (size, position) => {
   };
 };
 
+const normalizeTodoData = (value) => {
+  if (!isPlainObject(value)) {
+    return { error: 'La configuration du widget todo est invalide.' };
+  }
+
+  const title = normalizeTrimmedString(value.title);
+  if (!title) {
+    return { error: 'Le titre de la liste de tâches est obligatoire.' };
+  }
+
+  return { data: { title } };
+};
+
 const WIDGET_TYPE_DEFINITIONS = {
   TEST: {
     buildDefaultData: ({ size, position }) => buildDefaultTestData(size, position),
@@ -379,6 +392,11 @@ const WIDGET_TYPE_DEFINITIONS = {
     requiresData: true,
     requiredDataMessage: 'Le widget MUSIC doit contenir une configuration.',
     normalizeData: normalizeMusicData,
+  },
+  TODO: {
+    requiresData: true,
+    requiredDataMessage: 'Le widget TODO doit contenir un titre.',
+    normalizeData: normalizeTodoData,
   },
 };
 
