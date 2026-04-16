@@ -22,9 +22,10 @@ model User {
   resetPasswordExpires DateTime?
 
   // Relations
-  groups        GroupMember[] // Lien vers les groupes auxquels l'utilisateur appartient
-  createdGroups Group[]       @relation("GroupCreator")
+  groups         GroupMember[] // Lien vers les groupes auxquels l'utilisateur appartient
+  createdGroups  Group[]       @relation("GroupCreator")
   paidExpenses  Expense[]     @relation("ExpensePayer")
+  assignedTasks  Task[]        @relation("AssignedTasks")
 }
 
 // -----------------------------------------------------------------------------
@@ -87,10 +88,39 @@ model Widget {
   data     Json?
   isActive Boolean    @default(true)
 
-  group    Group     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  group     Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
   expenses Expense[]
+  tasks     Task[]
+  events    Event[]
 
   @@index([groupId, position])
+}
+
+model Task {
+  id           Int      @id @default(autoincrement())
+  widgetId     Int
+  title        String
+  isCompleted  Boolean  @default(false)
+  assignedToId Int?
+  createdAt    DateTime @default(now())
+
+  widget       Widget   @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  assignee     User?    @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([widgetId])
+}
+
+model Event {
+  id        Int       @id @default(autoincrement())
+  widgetId  Int
+  title     String
+  startDate DateTime
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+
+  widget    Widget    @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+
+  @@index([widgetId])
 }
 
 enum WidgetType {
@@ -101,6 +131,8 @@ enum WidgetType {
   BUDGET
   COUNTDOWN
   TRICOUNT
+  TODO
+  CALENDAR
 }
 
 enum WidgetSize {

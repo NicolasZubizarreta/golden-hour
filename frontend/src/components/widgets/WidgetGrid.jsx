@@ -22,6 +22,7 @@ import WidgetCard from './WidgetCard';
 
 export default function WidgetGrid({
   widgets,
+  groupMembers = [],
   canManageWidgets,
   isReordering,
   deletingWidgetId,
@@ -138,13 +139,14 @@ export default function WidgetGrid({
 
   const gridContent = (
     <div
-      className={`grid grid-cols-2 gap-8 w-full ${isMobileViewport && isMobileEditMode ? 'select-none' : ''}`}
+      className={`grid grid-cols-2 gap-4 sm:gap-8 w-full ${isMobileViewport && isMobileEditMode ? 'select-none' : ''}`}
       onPointerDown={handleGridPointerDown}
     >
       {widgets.map((widget) => (
         <SortableWidget
           key={widget.id}
           widget={widget}
+          groupMembers={groupMembers}
           canManageWidgets={canManageWidgets}
           canDrag={canDrag}
           isActiveDrag={widget.id === activeWidgetId}
@@ -195,4 +197,3 @@ export default function WidgetGrid({
     </DndContext>
   );
 }
-
