@@ -285,6 +285,9 @@ export default function Dashboard() {
     setSelectedWidgetType(type);
     setWidgetModalError('');
     setEditingWidgetId(null);
+    if (widgetDefinition.requiredSize) {
+      setWidgetSize(widgetDefinition.requiredSize);
+    }
   };
 
   const handleStartEditWidget = (widget) => {

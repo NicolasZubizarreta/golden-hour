@@ -1,4 +1,4 @@
-const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN'];
+const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN', 'TRICOUNT'];
 const WIDGET_SIZES = ['SQUARE', 'RECT'];
 const COUNTDOWN_TYPES = ['SINGLE', 'RECURRING'];
 const COUNTDOWN_FREQUENCIES = ['WEEKLY', 'MONTHLY_FIRST'];
@@ -366,6 +366,22 @@ const buildDefaultTestData = (size, position) => {
   };
 };
 
+const normalizeTricountData = (value) => {
+  if (value === undefined || value === null) {
+    return { data: { title: 'Tricount', currency: 'EUR' } };
+  }
+
+  if (!isPlainObject(value)) {
+    return { error: 'La configuration du widget Tricount est invalide.' };
+  }
+
+  const title = normalizeTrimmedString(value.title) || 'Tricount';
+  const allowedCurrencies = ['EUR', 'USD', 'GBP', 'CHF', 'CAD', 'AUD'];
+  const currency = allowedCurrencies.includes(value.currency) ? value.currency : 'EUR';
+
+  return { data: { title, currency } };
+};
+
 const WIDGET_TYPE_DEFINITIONS = {
   TEST: {
     buildDefaultData: ({ size, position }) => buildDefaultTestData(size, position),
@@ -379,6 +395,9 @@ const WIDGET_TYPE_DEFINITIONS = {
     requiresData: true,
     requiredDataMessage: 'Le widget MUSIC doit contenir une configuration.',
     normalizeData: normalizeMusicData,
+  },
+  TRICOUNT: {
+    normalizeData: normalizeTricountData,
   },
 };
 
