@@ -392,6 +392,14 @@ const normalizeTodoData = (value) => {
   return { data: { title } };
 };
 
+const normalizeTodoSize = (size) => {
+  if (size !== 'SQUARE') {
+    return { error: 'Le widget TODO est disponible uniquement en format carré.' };
+  }
+
+  return null;
+};
+
 const WIDGET_TYPE_DEFINITIONS = {
   TEST: {
     buildDefaultData: ({ size, position }) => buildDefaultTestData(size, position),
@@ -409,6 +417,7 @@ const WIDGET_TYPE_DEFINITIONS = {
   TODO: {
     requiresData: true,
     requiredDataMessage: 'Le widget TODO doit contenir un titre.',
+    validateSize: normalizeTodoSize,
     normalizeData: normalizeTodoData,
   },
   CALENDAR: {
@@ -424,6 +433,14 @@ const normalizeWidgetDataForPersist = async ({ type, size, rawData, position = 0
   }
 
   const definition = WIDGET_TYPE_DEFINITIONS[type];
+
+  if (typeof definition?.validateSize === 'function') {
+    const sizeValidation = definition.validateSize(size);
+
+    if (sizeValidation?.error) {
+      return sizeValidation;
+    }
+  }
 
   if (definition?.normalizeData) {
     if ((rawData === undefined || rawData === null) && definition.requiresData) {

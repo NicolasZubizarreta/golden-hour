@@ -20,9 +20,15 @@ export const buildCalendarPayloadFromDraft = (draft) => {
     return { error: 'Configuration du widget invalide.' };
   }
 
+  const title = normalizeText(draft.title);
+
+  if (!title) {
+    return { error: 'Le nom du calendrier est obligatoire.' };
+  }
+
   return {
     payload: {
-      title: normalizeText(draft.title),
+      title,
     },
   };
 };

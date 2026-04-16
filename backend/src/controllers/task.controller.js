@@ -20,6 +20,10 @@ const getWidgetWithGroupAccess = async (widgetId, userId) => {
 
   if (!widget) return { error: 'Widget introuvable.', status: 404 };
 
+  if (widget.type !== 'TODO') {
+    return { error: 'Ce widget ne peut pas contenir de tâches.', status: 400 };
+  }
+
   const member = await prisma.groupMember.findUnique({
     where: { userId_groupId: { userId, groupId: widget.groupId } },
   });
@@ -101,10 +105,14 @@ exports.updateTask = async (req, res) => {
 
     const task = await prisma.task.findUnique({
       where: { id: taskId },
-      include: { widget: { select: { groupId: true } } },
+      include: { widget: { select: { groupId: true, type: true } } },
     });
 
     if (!task) return res.status(404).json({ message: 'Tâche introuvable.' });
+
+    if (task.widget.type !== 'TODO') {
+      return res.status(400).json({ message: 'Ce widget ne peut pas contenir de tâches.' });
+    }
 
     const member = await prisma.groupMember.findUnique({
       where: { userId_groupId: { userId: req.user.id, groupId: task.widget.groupId } },
@@ -138,10 +146,14 @@ exports.deleteTask = async (req, res) => {
 
     const task = await prisma.task.findUnique({
       where: { id: taskId },
-      include: { widget: { select: { groupId: true } } },
+      include: { widget: { select: { groupId: true, type: true } } },
     });
 
     if (!task) return res.status(404).json({ message: 'Tâche introuvable.' });
+
+    if (task.widget.type !== 'TODO') {
+      return res.status(400).json({ message: 'Ce widget ne peut pas contenir de tâches.' });
+    }
 
     const member = await prisma.groupMember.findUnique({
       where: { userId_groupId: { userId: req.user.id, groupId: task.widget.groupId } },

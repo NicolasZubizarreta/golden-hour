@@ -20,9 +20,17 @@ export const buildTodoPayloadFromDraft = (draft) => {
     return { error: 'Configuration du widget invalide.' };
   }
 
+  const title = normalizeText(draft.title);
+
+  if (!title) {
+    return { error: 'Le titre de la liste de tâches est obligatoire.' };
+  }
+
   return {
     payload: {
-      title: normalizeText(draft.title),
+      title,
     },
   };
 };
+
+export const isTodoWidgetSizeAllowed = (widgetSize) => widgetSize === 'SQUARE';

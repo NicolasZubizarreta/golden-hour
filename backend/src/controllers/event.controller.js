@@ -26,6 +26,10 @@ const getWidgetWithGroupAccess = async (widgetId, userId) => {
 
   if (!widget) return { error: 'Widget introuvable.', status: 404 };
 
+  if (widget.type !== 'CALENDAR') {
+    return { error: 'Ce widget ne peut pas contenir d’événements.', status: 400 };
+  }
+
   const member = await prisma.groupMember.findUnique({
     where: { userId_groupId: { userId, groupId: widget.groupId } },
   });
@@ -100,10 +104,14 @@ exports.updateEvent = async (req, res) => {
 
     const event = await prisma.event.findUnique({
       where: { id: eventId },
-      include: { widget: { select: { groupId: true } } },
+      include: { widget: { select: { groupId: true, type: true } } },
     });
 
     if (!event) return res.status(404).json({ message: 'Événement introuvable.' });
+
+    if (event.widget.type !== 'CALENDAR') {
+      return res.status(400).json({ message: 'Ce widget ne peut pas contenir d’événements.' });
+    }
 
     const member = await prisma.groupMember.findUnique({
       where: { userId_groupId: { userId: req.user.id, groupId: event.widget.groupId } },
@@ -115,9 +123,29 @@ exports.updateEvent = async (req, res) => {
       return res.status(403).json({ message: "Vous devez être ADMIN ou EDITOR pour modifier un événement." });
     }
 
-    const title = typeof req.body.title === 'string' ? req.body.title.trim() : event.title;
-    const startDate = req.body.startDate != null ? (parseIsoDate(req.body.startDate) ?? event.startDate) : event.startDate;
-    const endDate = req.body.endDate === null ? null : (req.body.endDate != null ? parseIsoDate(req.body.endDate) : event.endDate);
+    let title = event.title;
+    if (req.body.title !== undefined) {
+      title = typeof req.body.title === 'string' ? req.body.title.trim() : '';
+      if (!title) return res.status(400).json({ message: "Le titre de l'événement est obligatoire." });
+    }
+
+    let startDate = event.startDate;
+    if (req.body.startDate !== undefined) {
+      startDate = parseIsoDate(req.body.startDate);
+      if (!startDate) return res.status(400).json({ message: 'La date de début est invalide.' });
+    }
+
+    let endDate = event.endDate;
+    if (req.body.endDate === null) {
+      endDate = null;
+    } else if (req.body.endDate !== undefined) {
+      endDate = parseIsoDate(req.body.endDate);
+      if (!endDate) return res.status(400).json({ message: 'La date de fin est invalide.' });
+    }
+
+    if (endDate && endDate <= startDate) {
+      return res.status(400).json({ message: 'La date de fin doit être après la date de début.' });
+    }
 
     const updated = await prisma.event.update({
       where: { id: eventId },
@@ -138,10 +166,14 @@ exports.deleteEvent = async (req, res) => {
 
     const event = await prisma.event.findUnique({
       where: { id: eventId },
-      include: { widget: { select: { groupId: true } } },
+      include: { widget: { select: { groupId: true, type: true } } },
     });
 
     if (!event) return res.status(404).json({ message: 'Événement introuvable.' });
+
+    if (event.widget.type !== 'CALENDAR') {
+      return res.status(400).json({ message: 'Ce widget ne peut pas contenir d’événements.' });
+    }
 
     const member = await prisma.groupMember.findUnique({
       where: { userId_groupId: { userId: req.user.id, groupId: event.widget.groupId } },

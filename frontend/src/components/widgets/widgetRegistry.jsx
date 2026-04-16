@@ -26,6 +26,7 @@ import {
   buildTodoPayloadFromDraft,
   createDefaultTodoDraft,
   createTodoDraftFromData,
+  isTodoWidgetSizeAllowed,
 } from '../../utils/todoWidget';
 
 const WIDGET_DEFINITIONS = [
@@ -99,6 +100,7 @@ const WIDGET_DEFINITIONS = [
     createDefaultDraft: createDefaultTodoDraft,
     createDraftFromData: createTodoDraftFromData,
     buildPayloadFromDraft: buildTodoPayloadFromDraft,
+    isSizeAllowed: isTodoWidgetSizeAllowed,
     renderCatalogIcon: () => (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -152,6 +154,7 @@ export const WIDGET_CATALOG = WIDGET_DEFINITIONS.map((definition) => ({
   title: definition.title,
   subtitle: definition.subtitle,
   enabled: definition.enabled,
+  isSizeAllowed: definition.isSizeAllowed,
   surfaceClassName: definition.surfaceClassName,
   iconClassName: definition.iconClassName,
   previewValue: definition.previewValue,
@@ -159,6 +162,16 @@ export const WIDGET_CATALOG = WIDGET_DEFINITIONS.map((definition) => ({
 }));
 
 export const getWidgetDefinition = (widgetType) => WIDGET_DEFINITION_MAP.get(widgetType) || null;
+
+export const isWidgetSizeAllowed = (widgetType, widgetSize) => {
+  const definition = getWidgetDefinition(widgetType);
+
+  if (typeof definition?.isSizeAllowed === 'function') {
+    return definition.isSizeAllowed(widgetSize);
+  }
+
+  return true;
+};
 
 export const getWidgetCardComponent = (widgetType) => (
   getWidgetDefinition(widgetType)?.cardComponent || TestWidgetCard

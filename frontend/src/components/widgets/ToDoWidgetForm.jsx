@@ -2,7 +2,6 @@ import ToDoWidgetCard from './ToDoWidgetCard';
 
 export default function ToDoWidgetForm({
   draft,
-  widgetSize,
   modalError,
   isSubmitting,
   isEditing = false,
@@ -13,12 +12,12 @@ export default function ToDoWidgetForm({
   const previewWidget = {
     id: 'preview-todo',
     type: 'TODO',
-    size: widgetSize,
+    size: 'SQUARE',
     data: { title: draft.title || 'Liste de tâches' },
   };
 
-  const previewWidthClass = widgetSize === 'RECT' ? 'max-w-[760px]' : 'max-w-[360px]';
-  const previewAspectClass = widgetSize === 'RECT' ? 'aspect-[2.08/1]' : 'aspect-square';
+  const previewWidthClass = 'max-w-[360px]';
+  const previewAspectClass = 'aspect-square';
 
   const PreviewCard = (
     <div className={`w-full ${previewWidthClass}`}>
@@ -51,7 +50,7 @@ export default function ToDoWidgetForm({
         </button>
 
         <div className="hidden rounded-golden bg-golden-input px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-golden-text shadow-creuse sm:block">
-          {widgetSize === 'RECT' ? 'Rectangle' : 'Carre'}
+          Carré uniquement
         </div>
       </div>
 
