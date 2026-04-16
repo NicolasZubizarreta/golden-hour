@@ -9,6 +9,7 @@ const groupRoutes = require('./routes/group.routes');
 const userRoutes = require('./routes/user.routes');
 const widgetTaskRoutes = require('./routes/widgetTask.routes');
 const taskRoutes = require('./routes/task.routes');
+const eventRoutes = require('./routes/event.routes');
 const { ensureUploadDirectories } = require('./utils/uploads');
 
 const app = express();
@@ -59,6 +60,7 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/widgets', widgetTaskRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/events', eventRoutes);
 
 app.use((error, req, res, next) => {
   if (error?.type === 'entity.too.large') {
