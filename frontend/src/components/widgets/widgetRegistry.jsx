@@ -5,6 +5,8 @@ import CountdownWidgetForm from './CountdownWidgetForm';
 import MusicWidgetCard from './MusicWidgetCard';
 import MusicWidgetForm from './MusicWidgetForm';
 import TestWidgetCard from './TestWidgetCard';
+import TricountWidgetCard from './TricountWidgetCard';
+import TricountWidgetForm from './TricountWidgetForm';
 import ToDoWidgetCard from './ToDoWidgetCard';
 import ToDoWidgetForm from './ToDoWidgetForm';
 import {
@@ -23,6 +25,10 @@ import {
   createMusicDraftFromData,
 } from '../../utils/musicWidget';
 import {
+  buildTricountPayloadFromDraft,
+  createDefaultTricountDraft,
+  createTricountDraftFromData,
+} from '../../utils/tricount';
   buildTodoPayloadFromDraft,
   createDefaultTodoDraft,
   createTodoDraftFromData,
@@ -140,6 +146,27 @@ const WIDGET_DEFINITIONS = [
     renderCatalogIcon: () => (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 01.553-.894L9 2m0 18l6-3m-6 3V2m6 15l6 3m-6-3V5m6 15V8m0 12l-6-3"></path>
+      </svg>
+    ),
+  },
+  {
+    type: 'TRICOUNT',
+    title: 'Tricount',
+    subtitle: 'Partage des dépenses du groupe',
+    enabled: true,
+    requiredSize: 'RECT',
+    surfaceClassName: 'bg-[linear-gradient(135deg,#92400e_0%,#d97706_55%,#78350f_100%)] text-[#FFF7ED]',
+    iconClassName: 'bg-white/20 text-white',
+    previewValue: '€ 0',
+    modalMaxWidthClass: 'max-w-4xl',
+    cardComponent: TricountWidgetCard,
+    formComponent: TricountWidgetForm,
+    createDefaultDraft: createDefaultTricountDraft,
+    createDraftFromData: createTricountDraftFromData,
+    buildPayloadFromDraft: buildTricountPayloadFromDraft,
+    renderCatalogIcon: () => (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
       </svg>
     ),
   },
