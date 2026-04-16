@@ -380,6 +380,16 @@ const normalizeTricountData = (value) => {
   const currency = allowedCurrencies.includes(value.currency) ? value.currency : 'EUR';
 
   return { data: { title, currency } };
+};
+
+const normalizeTricountSize = (size) => {
+  if (size !== 'RECT') {
+    return { error: 'Le widget TRICOUNT est disponible uniquement en format rectangle.' };
+  }
+
+  return null;
+};
+
 const normalizeCalendarData = (value) => {
   if (!isPlainObject(value)) {
     return { error: 'La configuration du widget calendrier est invalide.' };
@@ -429,7 +439,9 @@ const WIDGET_TYPE_DEFINITIONS = {
     normalizeData: normalizeMusicData,
   },
   TRICOUNT: {
+    validateSize: normalizeTricountSize,
     normalizeData: normalizeTricountData,
+  },
   TODO: {
     requiresData: true,
     requiredDataMessage: 'Le widget TODO doit contenir un titre.',

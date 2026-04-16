@@ -7,6 +7,14 @@ export default function WidgetTypePicker({
   onWidgetSizeChange,
   onSelectWidgetType,
 }) {
+  const visibleWidgetOptions = filteredWidgetOptions.filter((option) => {
+    const isAllowedForSize = typeof option.isSizeAllowed === 'function'
+      ? option.isSizeAllowed(widgetSize)
+      : true;
+
+    return isAllowedForSize || !option.hideWhenSizeInvalid;
+  });
+
   return (
     <>
       <h2 className="font-outfit font-black text-3xl text-gray-900 mb-6 w-full text-left">Ajouter un widget</h2>
@@ -32,7 +40,7 @@ export default function WidgetTypePicker({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2 pr-4 mb-8">
         <div className={`grid gap-4 w-full transition-all duration-300 ${widgetSize === 'SQUARE' ? 'grid-cols-2' : 'grid-cols-1'}`}>
-          {filteredWidgetOptions.map((option) => {
+          {visibleWidgetOptions.map((option) => {
             const isAllowedForSize = typeof option.isSizeAllowed === 'function'
               ? option.isSizeAllowed(widgetSize)
               : true;
@@ -54,7 +62,9 @@ export default function WidgetTypePicker({
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] opacity-75">{option.previewValue}</p>
                   <h3 className="mt-2 text-xl font-black leading-tight">{option.title}</h3>
                   <p className="mt-2 text-sm opacity-85 font-medium">
-                    {isAllowedForSize ? option.subtitle : 'Disponible uniquement en carré'}
+                    {isAllowedForSize
+                      ? option.subtitle
+                      : `Disponible uniquement en ${option.requiredSize === 'RECT' ? 'rectangle' : 'carré'}`}
                   </p>
                 </div>
               </button>
@@ -63,7 +73,7 @@ export default function WidgetTypePicker({
         </div>
       </div>
 
-      {filteredWidgetOptions.length === 0 && (
+      {visibleWidgetOptions.length === 0 && (
         <div className="w-full rounded-golden bg-golden-input px-5 py-8 text-center text-sm font-bold text-golden-muted shadow-creuse">
           Aucun widget ne correspond à cette recherche.
         </div>

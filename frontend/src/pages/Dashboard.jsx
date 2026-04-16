@@ -19,6 +19,12 @@ const normalizeSearchValue = (value = '') => value
   .replace(/[\u0300-\u036f]/g, '')
   .trim();
 
+const getWidgetSizeRestrictionMessage = (widgetDefinition) => (
+  widgetDefinition?.requiredSize === 'RECT'
+    ? 'Ce widget est disponible uniquement en format rectangle.'
+    : 'Ce widget est disponible uniquement en format carré.'
+);
+
 export default function Dashboard() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -252,7 +258,7 @@ export default function Dashboard() {
     }
 
     if (typeof widgetDefinition.isSizeAllowed === 'function' && !widgetDefinition.isSizeAllowed(widgetSize)) {
-      const message = 'Ce widget est disponible uniquement en format carré.';
+      const message = getWidgetSizeRestrictionMessage(widgetDefinition);
       setError(message);
       setWidgetModalError(message);
       return;
@@ -291,7 +297,7 @@ export default function Dashboard() {
     }
 
     if (typeof widgetDefinition.isSizeAllowed === 'function' && !widgetDefinition.isSizeAllowed(widgetSize)) {
-      setWidgetModalError('Ce widget est disponible uniquement en format carré.');
+      setWidgetModalError(getWidgetSizeRestrictionMessage(widgetDefinition));
       return;
     }
 
@@ -318,7 +324,7 @@ export default function Dashboard() {
     setWidgetModalError('');
     setSelectedWidgetType(widget.type);
     const nextWidgetSize = typeof widgetDefinition.isSizeAllowed === 'function' && !widgetDefinition.isSizeAllowed(widget.size)
-      ? 'SQUARE'
+      ? widgetDefinition.requiredSize || 'SQUARE'
       : widget.size;
     setWidgetSize(nextWidgetSize === 'RECT' ? 'RECT' : 'SQUARE');
     setWidgetDrafts((previousDrafts) => ({
@@ -359,7 +365,7 @@ export default function Dashboard() {
     }
 
     if (typeof widgetDefinition.isSizeAllowed === 'function' && !widgetDefinition.isSizeAllowed(widgetSize)) {
-      setWidgetModalError('Ce widget est disponible uniquement en format carré.');
+      setWidgetModalError(getWidgetSizeRestrictionMessage(widgetDefinition));
       return;
     }
 
@@ -671,4 +677,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
