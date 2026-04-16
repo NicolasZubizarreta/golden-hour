@@ -88,6 +88,7 @@ model Widget {
 
   group     Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
   tasks     Task[]
+  events    Event[]
 
   @@index([groupId, position])
 }
@@ -106,6 +107,19 @@ model Task {
   @@index([widgetId])
 }
 
+model Event {
+  id        Int       @id @default(autoincrement())
+  widgetId  Int
+  title     String
+  startDate DateTime
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+
+  widget    Widget    @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+
+  @@index([widgetId])
+}
+
 enum WidgetType {
   TEST
   NOTES
@@ -114,6 +128,7 @@ enum WidgetType {
   BUDGET
   COUNTDOWN
   TODO
+  CALENDAR
 }
 
 enum WidgetSize {
