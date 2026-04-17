@@ -1,4 +1,4 @@
-const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN', 'TODO', 'WEATHER'];
+const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN', 'TODO', 'CALENDAR', 'TRICOUNT', 'WEATHER'];
 const WIDGET_SIZES = ['SQUARE', 'RECT'];
 const COUNTDOWN_TYPES = ['SINGLE', 'RECURRING'];
 const COUNTDOWN_FREQUENCIES = ['WEEKLY', 'MONTHLY_FIRST'];
@@ -366,6 +366,43 @@ const buildDefaultTestData = (size, position) => {
   };
 };
 
+const normalizeTricountData = (value) => {
+  if (value === undefined || value === null) {
+    return { data: { title: 'Tricount', currency: 'EUR' } };
+  }
+
+  if (!isPlainObject(value)) {
+    return { error: 'La configuration du widget Tricount est invalide.' };
+  }
+
+  const title = normalizeTrimmedString(value.title) || 'Tricount';
+  const allowedCurrencies = ['EUR', 'USD', 'GBP', 'CHF', 'CAD', 'AUD'];
+  const currency = allowedCurrencies.includes(value.currency) ? value.currency : 'EUR';
+
+  return { data: { title, currency } };
+};
+
+const normalizeTricountSize = (size) => {
+  if (size !== 'RECT') {
+    return { error: 'Le widget TRICOUNT est disponible uniquement en format rectangle.' };
+  }
+
+  return null;
+};
+
+const normalizeCalendarData = (value) => {
+  if (!isPlainObject(value)) {
+    return { error: 'La configuration du widget calendrier est invalide.' };
+  }
+
+  const title = normalizeTrimmedString(value.title);
+  if (!title) {
+    return { error: "Le titre du calendrier est obligatoire." };
+  }
+
+  return { data: { title } };
+};
+
 const normalizeTodoData = (value) => {
   if (!isPlainObject(value)) {
     return { error: 'La configuration du widget todo est invalide.' };
@@ -390,6 +427,12 @@ const normalizeWeatherData = (value) => {
   }
 
   return { data: { city } };
+const normalizeTodoSize = (size) => {
+  if (size !== 'SQUARE') {
+    return { error: 'Le widget TODO est disponible uniquement en format carré.' };
+  }
+
+  return null;
 };
 
 const WIDGET_TYPE_DEFINITIONS = {
@@ -406,15 +449,25 @@ const WIDGET_TYPE_DEFINITIONS = {
     requiredDataMessage: 'Le widget MUSIC doit contenir une configuration.',
     normalizeData: normalizeMusicData,
   },
+  TRICOUNT: {
+    validateSize: normalizeTricountSize,
+    normalizeData: normalizeTricountData,
+  },
   TODO: {
     requiresData: true,
     requiredDataMessage: 'Le widget TODO doit contenir un titre.',
+    validateSize: normalizeTodoSize,
     normalizeData: normalizeTodoData,
   },
   WEATHER: {
     requiresData: true,
     requiredDataMessage: 'Le widget WEATHER doit contenir une ville.',
     normalizeData: normalizeWeatherData,
+  },
+  CALENDAR: {
+    requiresData: true,
+    requiredDataMessage: 'Le widget CALENDAR doit contenir un titre.',
+    normalizeData: normalizeCalendarData,
   },
 };
 
@@ -424,6 +477,14 @@ const normalizeWidgetDataForPersist = async ({ type, size, rawData, position = 0
   }
 
   const definition = WIDGET_TYPE_DEFINITIONS[type];
+
+  if (typeof definition?.validateSize === 'function') {
+    const sizeValidation = definition.validateSize(size);
+
+    if (sizeValidation?.error) {
+      return sizeValidation;
+    }
+  }
 
   if (definition?.normalizeData) {
     if ((rawData === undefined || rawData === null) && definition.requiresData) {

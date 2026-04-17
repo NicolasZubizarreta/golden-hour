@@ -1,13 +1,13 @@
 const normalizeText = (value) => typeof value === 'string' ? value.trim() : '';
 const isPlainObject = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
 
-export const createDefaultTodoDraft = () => ({
+export const createDefaultCalendarDraft = () => ({
   title: '',
 });
 
-export const createTodoDraftFromData = (rawData) => {
+export const createCalendarDraftFromData = (rawData) => {
   if (!isPlainObject(rawData)) {
-    return createDefaultTodoDraft();
+    return createDefaultCalendarDraft();
   }
 
   return {
@@ -15,7 +15,7 @@ export const createTodoDraftFromData = (rawData) => {
   };
 };
 
-export const buildTodoPayloadFromDraft = (draft) => {
+export const buildCalendarPayloadFromDraft = (draft) => {
   if (!isPlainObject(draft)) {
     return { error: 'Configuration du widget invalide.' };
   }
@@ -23,7 +23,7 @@ export const buildTodoPayloadFromDraft = (draft) => {
   const title = normalizeText(draft.title);
 
   if (!title) {
-    return { error: 'Le titre de la liste de tâches est obligatoire.' };
+    return { error: 'Le nom du calendrier est obligatoire.' };
   }
 
   return {
@@ -32,5 +32,3 @@ export const buildTodoPayloadFromDraft = (draft) => {
     },
   };
 };
-
-export const isTodoWidgetSizeAllowed = (widgetSize) => widgetSize === 'SQUARE';

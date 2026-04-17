@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import WidgetCardShell from './WidgetCardShell';
 import api, { getApiErrorMessage } from '../../api/axiosConfig';
 import { getInitials, getMediaUrl } from '../../utils/media';
@@ -6,20 +6,17 @@ import { getInitials, getMediaUrl } from '../../utils/media';
 export default function ToDoWidgetCard(props) {
   const { widget, groupMembers = [] } = props;
 
-  const isRect = widget.size === 'RECT';
-
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [togglingId, setTogglingId] = useState(null);
 
-  // Carré : formulaire masqué par défaut. Rectangle : toujours visible.
+  // Le widget TODO est volontairement limité au format carré.
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newAssigneeId, setNewAssigneeId] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState('');
 
-  const rectInputRef = useRef(null);
   const isPreview = typeof widget.id !== 'number';
 
   useEffect(() => {
@@ -91,8 +88,7 @@ export default function ToDoWidgetCard(props) {
       setTasks((prev) => [...prev, data.task]);
       setNewTitle('');
       setNewAssigneeId('');
-      if (!isRect) setShowAddForm(false);
-      if (isRect) rectInputRef.current?.focus(); // re-focus pour enchaîner les ajouts
+      setShowAddForm(false);
     } catch (err) {
       setAddError(getApiErrorMessage(err, "Impossible d'ajouter la tâche."));
     } finally {
@@ -111,23 +107,20 @@ export default function ToDoWidgetCard(props) {
   const completed = tasks.filter((t) => t.isCompleted).length;
   const progressPct = tasks.length > 0 ? (completed / tasks.length) * 100 : 0;
 
-  // Carré : 4 tâches non complétées max. Rectangle : toutes les tâches.
-  const visibleTasks = isRect
-    ? tasks
-    : tasks.filter((t) => !t.isCompleted).slice(0, 4);
+  const visibleTasks = tasks.filter((t) => !t.isCompleted).slice(0, 4);
 
   const renderTaskRow = (task) => {
     const assignee = task.assignee || task.assignedTo || null;
     return (
       <div
         key={task.id}
-        className="group flex items-center gap-2.5 rounded-[10px] px-2.5 py-1.5 hover:bg-white/[0.07] transition"
+        className="group flex items-center gap-[clamp(0.25rem,3cqw,0.625rem)] rounded-[10px] px-[clamp(0.35rem,4cqw,0.625rem)] py-[clamp(0.18rem,2.4cqw,0.375rem)] hover:bg-white/[0.07] transition"
       >
         <button
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={() => handleToggle(task)}
-          className={`shrink-0 rounded-[4px] border-2 flex items-center justify-center transition cursor-pointer w-5 h-5
+          className={`shrink-0 rounded-[4px] border-2 flex items-center justify-center transition cursor-pointer h-[clamp(0.9rem,10cqw,1.25rem)] w-[clamp(0.9rem,10cqw,1.25rem)]
             ${task.isCompleted
               ? 'bg-golden-primary border-golden-primary'
               : 'bg-white/10 border-white/40 hover:border-golden-primary'
@@ -141,7 +134,7 @@ export default function ToDoWidgetCard(props) {
           )}
         </button>
 
-        <span className={`flex-1 min-w-0 leading-tight truncate font-semibold text-sm transition ${
+        <span className={`flex-1 min-w-0 leading-tight truncate font-semibold text-[clamp(0.58rem,6.4cqw,0.875rem)] transition ${
           task.isCompleted ? 'line-through text-white/35' : 'text-white/90'
         }`}>
           {task.title}
@@ -150,7 +143,7 @@ export default function ToDoWidgetCard(props) {
         {assignee && (
           <div
             title={assignee.name}
-            className="shrink-0 rounded-full overflow-hidden bg-white/15 flex items-center justify-center font-bold text-white w-7 h-7 text-[0.52rem]"
+            className="shrink-0 rounded-full overflow-hidden bg-white/15 flex items-center justify-center font-bold text-white h-[clamp(1.05rem,13cqw,1.75rem)] w-[clamp(1.05rem,13cqw,1.75rem)] text-[clamp(0.42rem,4.4cqw,0.52rem)]"
           >
             {assignee.avatar ? (
               <img src={getMediaUrl(assignee.avatar)} alt={assignee.name} className="w-full h-full object-cover" />
@@ -164,7 +157,7 @@ export default function ToDoWidgetCard(props) {
           type="button"
           onPointerDown={(e) => e.stopPropagation()}
           onClick={() => handleDelete(task.id)}
-          className="shrink-0 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white/30 hover:text-red-300 transition cursor-pointer w-4 h-4"
+          className="shrink-0 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white/30 hover:text-red-300 transition cursor-pointer h-[clamp(0.75rem,8cqw,1rem)] w-[clamp(0.75rem,8cqw,1rem)]"
           aria-label="Supprimer la tâche"
         >
           <svg className="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,25 +168,25 @@ export default function ToDoWidgetCard(props) {
     );
   };
 
-  // ─── Champs du formulaire d'ajout (partagés carré / rectangle) ─────────────
+  // ─── Champs du formulaire d'ajout ──────────────────────────────────────────
   const renderAddFormFields = (inputRef) => (
     <>
       {addError && (
-        <p className="text-xs font-bold text-red-300 leading-tight">{addError}</p>
+        <p className="text-[clamp(0.5rem,5cqw,0.75rem)] font-bold text-red-300 leading-tight">{addError}</p>
       )}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-[clamp(0.25rem,3cqw,0.5rem)]">
         <input
           ref={inputRef}
           type="text"
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           placeholder="Nouvelle tâche..."
-          className="flex-1 min-w-0 rounded-golden bg-black/20 px-3 py-1.5 text-sm font-medium text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
+          className="flex-1 min-w-0 rounded-golden bg-black/20 px-[clamp(0.5rem,5cqw,0.75rem)] py-[clamp(0.25rem,3cqw,0.375rem)] text-[clamp(0.58rem,6cqw,0.875rem)] font-medium text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
         />
         <button
           type="submit"
           disabled={isAdding || !newTitle.trim()}
-          className="shrink-0 rounded-golden bg-white px-3 py-1.5 text-sm font-black text-green-800 shadow-halo hover:bg-white/90 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="shrink-0 rounded-golden bg-white px-[clamp(0.5rem,5cqw,0.75rem)] py-[clamp(0.25rem,3cqw,0.375rem)] text-[clamp(0.58rem,6cqw,0.875rem)] font-black text-green-800 shadow-halo hover:bg-white/90 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isAdding ? '...' : '+'}
         </button>
@@ -202,7 +195,7 @@ export default function ToDoWidgetCard(props) {
         <select
           value={newAssigneeId}
           onChange={(e) => setNewAssigneeId(e.target.value)}
-          className="w-full rounded-golden bg-black/20 px-3 py-1.5 text-sm font-medium text-white focus:outline-none focus:ring-1 focus:ring-white/40 cursor-pointer"
+          className="w-full rounded-golden bg-black/20 px-[clamp(0.5rem,5cqw,0.75rem)] py-[clamp(0.25rem,3cqw,0.375rem)] text-[clamp(0.58rem,6cqw,0.875rem)] font-medium text-white focus:outline-none focus:ring-1 focus:ring-white/40 cursor-pointer"
         >
           <option value="" className="text-gray-900">Assigner à... (optionnel)</option>
           {groupMembers.map((member) => (
@@ -215,94 +208,32 @@ export default function ToDoWidgetCard(props) {
     </>
   );
 
-  // ─── Format Rectangle ───────────────────────────────────────────────────────
-  if (isRect) {
-    return (
-      <WidgetCardShell
-        {...props}
-        showTypeLabel={false}
-        controlsTone="light"
-        className="p-[clamp(0.9rem,4.5vw,1.45rem)]"
-        style={{ background: '#16A34A', color: '#F0FDF4' }}
-        overlay={<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.14),transparent_36%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.08),transparent_28%)] pointer-events-none" />}
-      >
-        <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-3 pt-[1%]">
-
-          {/* Title + progress */}
-          <div className="min-w-0 pr-[15%]">
-            <h3 className="truncate whitespace-nowrap font-outfit font-black leading-[1.05] text-[clamp(0.9rem,3.5vw,1.2rem)]">
-              {title}
-            </h3>
-            {tasks.length > 0 && (
-              <div className="mt-1.5 flex items-center gap-2">
-                <div className="flex-1 h-[2.5px] rounded-full bg-white/20 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-golden-primary transition-all duration-500"
-                    style={{ width: `${progressPct}%` }}
-                  />
-                </div>
-                <span className="shrink-0 font-bold text-white/50 whitespace-nowrap text-xs">
-                  {completed}/{tasks.length}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Scrollable task list */}
-          <div className="overflow-y-auto min-h-0 space-y-0.5">
-            {isLoading ? (
-              <div className="flex h-full items-center justify-center text-xs font-bold text-white/30">
-                Chargement...
-              </div>
-            ) : tasks.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-xs font-bold text-white/30">
-                Aucune tâche pour le moment.
-              </div>
-            ) : (
-              visibleTasks.map(renderTaskRow)
-            )}
-          </div>
-
-          {/* Always-visible input at bottom */}
-          <form
-            onSubmit={handleAddTask}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="flex flex-col gap-2"
-          >
-            {renderAddFormFields(rectInputRef)}
-          </form>
-
-        </div>
-      </WidgetCardShell>
-    );
-  }
-
   // ─── Format Carré ───────────────────────────────────────────────────────────
   return (
     <WidgetCardShell
       {...props}
       showTypeLabel={false}
       controlsTone="light"
-      className="p-[clamp(0.9rem,4.5vw,1.45rem)]"
+      className="[container-type:inline-size] p-[clamp(0.55rem,3.2vw,1.45rem)]"
       style={{ background: '#16A34A', color: '#F0FDF4' }}
       overlay={<div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.14),transparent_36%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.08),transparent_28%)] pointer-events-none" />}
     >
-      <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-3 pt-[1%]">
+      <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)_auto] gap-[clamp(0.35rem,4cqw,0.75rem)] pt-[1%]">
 
         {/* Title + progress */}
         <div className="min-w-0 pr-[30%]">
-          <h3 className="truncate whitespace-nowrap font-outfit font-black leading-[1.05] text-[clamp(0.9rem,3.5vw,1.2rem)]">
+          <h3 className="truncate whitespace-nowrap font-outfit font-black leading-[1.05] text-[clamp(0.68rem,8cqw,1.2rem)]">
             {title}
           </h3>
           {tasks.length > 0 && (
-            <div className="mt-1.5 flex items-center gap-2">
-              <div className="flex-1 h-[2.5px] rounded-full bg-white/20 overflow-hidden">
+            <div className="mt-[clamp(0.2rem,2cqw,0.375rem)] flex items-center gap-[clamp(0.25rem,3cqw,0.5rem)]">
+              <div className="h-[clamp(1.5px,1.4cqw,2.5px)] flex-1 rounded-full bg-white/20 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-golden-primary transition-all duration-500"
                   style={{ width: `${progressPct}%` }}
                 />
               </div>
-              <span className="shrink-0 font-bold text-white/50 whitespace-nowrap text-xs">
+              <span className="shrink-0 font-bold text-white/50 whitespace-nowrap text-[clamp(0.48rem,5cqw,0.75rem)]">
                 {completed}/{tasks.length}
               </span>
             </div>
@@ -310,13 +241,13 @@ export default function ToDoWidgetCard(props) {
         </div>
 
         {/* First 4 uncompleted tasks only */}
-        <div className="overflow-hidden min-h-0 space-y-0.5">
+        <div className="overflow-hidden min-h-0 space-y-[clamp(0.08rem,1.4cqw,0.125rem)]">
           {isLoading ? (
-            <div className="flex h-full items-center justify-center text-xs font-bold text-white/30">
+            <div className="flex h-full items-center justify-center text-center text-[clamp(0.54rem,5.5cqw,0.75rem)] font-bold text-white/30">
               Chargement...
             </div>
           ) : visibleTasks.length === 0 && !showAddForm ? (
-            <div className="flex h-full items-center justify-center text-xs font-bold text-white/30">
+            <div className="flex h-full items-center justify-center text-center text-[clamp(0.54rem,5.5cqw,0.75rem)] font-bold text-white/30">
               Aucune tâche pour le moment.
             </div>
           ) : (
@@ -330,13 +261,13 @@ export default function ToDoWidgetCard(props) {
             <form
               onSubmit={handleAddTask}
               onPointerDown={(e) => e.stopPropagation()}
-              className="flex flex-col gap-2"
+              className="flex flex-col gap-[clamp(0.25rem,3cqw,0.5rem)]"
             >
               {renderAddFormFields(null)}
               <button
                 type="button"
                 onClick={handleCancelAdd}
-                className="text-left text-xs font-semibold text-white/40 hover:text-white/70 transition cursor-pointer"
+                className="text-left text-[clamp(0.5rem,5cqw,0.75rem)] font-semibold text-white/40 hover:text-white/70 transition cursor-pointer"
               >
                 Annuler
               </button>
@@ -346,9 +277,9 @@ export default function ToDoWidgetCard(props) {
               type="button"
               onPointerDown={(e) => e.stopPropagation()}
               onClick={() => setShowAddForm(true)}
-              className="flex items-center gap-1.5 font-semibold text-white/55 hover:text-white transition cursor-pointer text-xs"
+              className="flex items-center gap-[clamp(0.2rem,2.5cqw,0.375rem)] font-semibold text-white/55 hover:text-white transition cursor-pointer text-[clamp(0.52rem,5.5cqw,0.75rem)]"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-[clamp(0.7rem,7cqw,0.875rem)] w-[clamp(0.7rem,7cqw,0.875rem)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
               </svg>
               Ajouter une tâche

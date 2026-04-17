@@ -11,19 +11,20 @@ datasource db {
 // 1. UTILISATEURS
 // -----------------------------------------------------------------------------
 model User {
-  id        Int           @id @default(autoincrement())
-  email     String        @unique
-  password  String        
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
   name      String
-  avatar    String?       
-  createdAt DateTime      @default(now())
+  avatar    String?
+  createdAt DateTime @default(now())
 
-  resetPasswordToken   String?       @unique
+  resetPasswordToken   String?   @unique
   resetPasswordExpires DateTime?
-  
+
   // Relations
   groups         GroupMember[] // Lien vers les groupes auxquels l'utilisateur appartient
   createdGroups  Group[]       @relation("GroupCreator")
+  paidExpenses  Expense[]     @relation("ExpensePayer")
   assignedTasks  Task[]        @relation("AssignedTasks")
 }
 
@@ -31,18 +32,19 @@ model User {
 // 2. GROUPES (Le coeur de l'app)
 // -----------------------------------------------------------------------------
 model Group {
-  id         Int           @id @default(autoincrement())
-  name       String
-  type       GroupType     @default(FRIENDS)
-  inviteCode String        @unique // Le code d'invitation
-  coverImage String?
+  id          Int       @id @default(autoincrement())
+  name        String
+  type        GroupType @default(FRIENDS)
+  inviteCode  String    @unique // Le code d'invitation
+  coverImage  String?
   createdById Int
-  createdAt  DateTime      @default(now())
+  createdAt   DateTime  @default(now())
 
   // Relations
-  createdBy  User          @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  members    GroupMember[]
-  widgets    Widget[]
+  createdBy User          @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  members   GroupMember[]
+  widgets   Widget[]
+  expenses  Expense[]
 }
 
 enum GroupType {
@@ -54,40 +56,42 @@ enum GroupType {
 // 3. LA TABLE PIVOT (Membres & Rôles)
 // -----------------------------------------------------------------------------
 model GroupMember {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  groupId   Int
-  role      Role     @default(MEMBER)
-  joinedAt  DateTime @default(now())
+  id       Int      @id @default(autoincrement())
+  userId   Int
+  groupId  Int
+  role     Role     @default(MEMBER)
+  joinedAt DateTime @default(now())
 
   // Si on supprime un user ou un groupe, ça supprime proprement ce lien (Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   // Un utilisateur ne peut être qu'une seule fois dans un même groupe
   @@unique([userId, groupId])
 }
 
 enum Role {
-  ADMIN   // Créateur du groupe (Peut tout faire)
-  EDITOR  // Bras droit (Peut gérer les widgets)
-  MEMBER  // Simple participant
+  ADMIN // Créateur du groupe (Peut tout faire)
+  EDITOR // Bras droit (Peut gérer les widgets)
+  MEMBER // Simple participant
 }
 
 // -----------------------------------------------------------------------------
 // 4. LES WIDGETS (Moteur de grille du Dashboard)
 // -----------------------------------------------------------------------------
 model Widget {
-  id        Int        @id @default(autoincrement())
-  groupId   Int
-  type      WidgetType @default(TEST)
-  size      WidgetSize @default(SQUARE)
-  position  Int
-  data      Json?
-  isActive  Boolean    @default(true)
+  id       Int        @id @default(autoincrement())
+  groupId  Int
+  type     WidgetType @default(TEST)
+  size     WidgetSize @default(SQUARE)
+  position Int
+  data     Json?
+  isActive Boolean    @default(true)
 
   group     Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  expenses Expense[]
   tasks     Task[]
+  events    Event[]
 
   @@index([groupId, position])
 }
@@ -106,6 +110,19 @@ model Task {
   @@index([widgetId])
 }
 
+model Event {
+  id        Int       @id @default(autoincrement())
+  widgetId  Int
+  title     String
+  startDate DateTime
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+
+  widget    Widget    @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+
+  @@index([widgetId])
+}
+
 enum WidgetType {
   TEST
   NOTES
@@ -113,11 +130,34 @@ enum WidgetType {
   MUSIC
   BUDGET
   COUNTDOWN
+  TRICOUNT
   TODO
   WEATHER
+  CALENDAR
 }
 
 enum WidgetSize {
   SQUARE
   RECT
+}
+
+// -----------------------------------------------------------------------------
+// 5. LES DÉPENSES (Moteur du widget Tricount)
+// -----------------------------------------------------------------------------
+model Expense {
+  id           Int      @id @default(autoincrement())
+  widgetId     Int
+  groupId      Int
+  title        String
+  amount       Float
+  paidById     Int
+  participants Json // Tableau d'entiers userId (ex: [1, 2, 3])
+  createdAt    DateTime @default(now())
+
+  widget Widget @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  group  Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  paidBy User   @relation("ExpensePayer", fields: [paidById], references: [id], onDelete: Restrict)
+
+  @@index([widgetId])
+  @@index([groupId])
 }

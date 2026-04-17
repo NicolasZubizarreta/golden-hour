@@ -139,7 +139,7 @@ export default function WidgetGrid({
 
   const gridContent = (
     <div
-      className={`grid grid-cols-2 gap-8 w-full ${isMobileViewport && isMobileEditMode ? 'select-none' : ''}`}
+      className={`grid grid-cols-2 gap-4 sm:gap-8 w-full ${isMobileViewport && isMobileEditMode ? 'select-none' : ''}`}
       onPointerDown={handleGridPointerDown}
     >
       {widgets.map((widget) => (
@@ -197,4 +197,3 @@ export default function WidgetGrid({
     </DndContext>
   );
 }
-
