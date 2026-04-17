@@ -1,0 +1,3 @@
+-- AlterTable: add WEATHER to WidgetType enum
+ALTER TABLE `Widget`
+  MODIFY COLUMN `type` ENUM('TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN', 'TODO', 'WEATHER') NOT NULL DEFAULT 'TEST';

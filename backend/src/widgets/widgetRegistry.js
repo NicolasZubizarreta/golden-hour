@@ -1,4 +1,4 @@
-const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN', 'TODO', 'CALENDAR', 'TRICOUNT'];
+const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN', 'TODO', 'CALENDAR', 'TRICOUNT', 'WEATHER'];
 const WIDGET_SIZES = ['SQUARE', 'RECT'];
 const COUNTDOWN_TYPES = ['SINGLE', 'RECURRING'];
 const COUNTDOWN_FREQUENCIES = ['WEEKLY', 'MONTHLY_FIRST'];
@@ -416,6 +416,17 @@ const normalizeTodoData = (value) => {
   return { data: { title } };
 };
 
+const normalizeWeatherData = (value) => {
+  if (!isPlainObject(value)) {
+    return { error: 'La configuration du widget meteo est invalide.' };
+  }
+
+  const city = normalizeTrimmedString(value.city);
+  if (!city) {
+    return { error: 'La ville du widget meteo est obligatoire.' };
+  }
+
+  return { data: { city } };
 const normalizeTodoSize = (size) => {
   if (size !== 'SQUARE') {
     return { error: 'Le widget TODO est disponible uniquement en format carré.' };
@@ -447,6 +458,11 @@ const WIDGET_TYPE_DEFINITIONS = {
     requiredDataMessage: 'Le widget TODO doit contenir un titre.',
     validateSize: normalizeTodoSize,
     normalizeData: normalizeTodoData,
+  },
+  WEATHER: {
+    requiresData: true,
+    requiredDataMessage: 'Le widget WEATHER doit contenir une ville.',
+    normalizeData: normalizeWeatherData,
   },
   CALENDAR: {
     requiresData: true,

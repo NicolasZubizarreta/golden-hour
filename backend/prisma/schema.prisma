@@ -132,6 +132,7 @@ enum WidgetType {
   COUNTDOWN
   TRICOUNT
   TODO
+  WEATHER
   CALENDAR
 }
 

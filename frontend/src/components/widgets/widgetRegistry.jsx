@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import CalendarWidgetCard from './CalendarWidgetCard';
 import CalendarWidgetForm from './CalendarWidgetForm';
 import CountdownWidgetCard from './CountdownWidgetCard';
@@ -9,6 +10,12 @@ import TricountWidgetCard from './TricountWidgetCard';
 import TricountWidgetForm from './TricountWidgetForm';
 import ToDoWidgetCard from './ToDoWidgetCard';
 import ToDoWidgetForm from './ToDoWidgetForm';
+import WeatherWidgetCard, {
+  WeatherWidgetForm,
+  buildWeatherPayloadFromDraft,
+  createDefaultWeatherDraft,
+  createWeatherDraftFromData,
+} from './WeatherWidget';
 import {
   buildCalendarPayloadFromDraft,
   createCalendarDraftFromData,
@@ -115,6 +122,26 @@ const WIDGET_DEFINITIONS = [
       </svg>
     ),
   },
+    {
+    type: 'WEATHER',
+    title: 'Météo',
+    subtitle: 'Ville en direct',
+    enabled: true,
+    surfaceClassName: 'bg-[linear-gradient(140deg,#0CA6E0_0%,#0369A1_38%,#0EA5E9_100%)] text-[#F0F9FF]',
+    iconClassName: 'bg-white/18 text-white',
+    previewValue: '21 deg',
+    modalMaxWidthClass: 'max-w-4xl',
+    cardComponent: WeatherWidgetCard,
+    formComponent: WeatherWidgetForm,
+    createDefaultDraft: createDefaultWeatherDraft,
+    createDraftFromData: createWeatherDraftFromData,
+    buildPayloadFromDraft: buildWeatherPayloadFromDraft,
+    renderCatalogIcon: () => (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M3 15a4 4 0 004 4h9a4 4 0 100-8 5 5 0 10-9.7 1.63 6.3 6.3 0 00-3.3 3.37" />
+      </svg>
+    ),
+  },
   {
     type: 'CALENDAR',
     title: 'Calendrier',
@@ -135,6 +162,7 @@ const WIDGET_DEFINITIONS = [
       </svg>
     ),
   },
+
   {
     type: 'MAP',
     title: 'Map',

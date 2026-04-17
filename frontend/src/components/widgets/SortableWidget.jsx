@@ -1,6 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import WidgetCard from './WidgetCard';
 import { canEditWidgetType } from './widgetRegistry';
+import WeatherWidgetCard from './WeatherWidget';
 
 export default function SortableWidget({
   widget,
@@ -16,6 +17,15 @@ export default function SortableWidget({
   onDelete,
   onEdit,
 }) {
+  const renderWidgetCard = (cardProps) => {
+    switch (widget.type) {
+      case 'WEATHER':
+        return <WeatherWidgetCard {...cardProps} />;
+      default:
+        return <WidgetCard {...cardProps} />;
+    }
+  };
+
   const canEditWidget = canEditWidgetType(widget.type);
   const {
     attributes,
@@ -46,25 +56,25 @@ export default function SortableWidget({
       style={style}
       className={`relative w-full self-start overflow-visible ${widget.size === 'RECT' ? 'col-span-2 aspect-[2.08/1]' : 'col-span-1 aspect-square'} ${isActiveDrag ? 'pointer-events-none' : ''}`}
     >
-      <WidgetCard
-        widget={widget}
-        groupMembers={groupMembers}
-        canManageWidgets={canManageWidgets}
-        canDrag={canDrag}
-        isMobileViewport={isMobileViewport}
-        isMobileEditMode={isMobileEditMode}
-        showMobileDelete={false}
-        showMobileEdit={false}
-        onEnterMobileEditMode={onEnterMobileEditMode}
-        dragAttributes={attributes}
-        dragListeners={listeners}
-        isDragging={isDragging}
-        isDeleting={isDeleting}
-        disableContentInteraction={disableContentInteraction}
-        onDelete={() => onDelete(widget.id)}
-        canEdit={canEditWidget}
-        onEdit={() => onEdit(widget)}
-      />
+      {renderWidgetCard({
+        widget,
+        groupMembers,
+        canManageWidgets,
+        canDrag,
+        isMobileViewport,
+        isMobileEditMode,
+        showMobileDelete: false,
+        showMobileEdit: false,
+        onEnterMobileEditMode,
+        dragAttributes: attributes,
+        dragListeners: listeners,
+        isDragging,
+        isDeleting,
+        disableContentInteraction,
+        onDelete: () => onDelete(widget.id),
+        canEdit: canEditWidget,
+        onEdit: () => onEdit(widget),
+      })}
 
       {canManageWidgets && isMobileViewport && isMobileEditMode && (
         <div className="absolute -right-3 -top-3 z-40 flex items-center gap-2">
