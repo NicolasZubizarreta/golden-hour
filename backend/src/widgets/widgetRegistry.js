@@ -427,6 +427,8 @@ const normalizeWeatherData = (value) => {
   }
 
   return { data: { city } };
+};
+
 const normalizeTodoSize = (size) => {
   if (size !== 'SQUARE') {
     return { error: 'Le widget TODO est disponible uniquement en format carré.' };

@@ -198,10 +198,6 @@ export default function CountdownWidgetCard(props) {
                 strokeWidth={7}
                 valueClassName="text-[clamp(0.82rem,2.9cqw,1.7rem)]"
                 labelClassName="text-[clamp(0.42rem,0.82cqw,0.64rem)]"
-                valueClassName="text-[clamp(0.82rem,2.9cqw,1.7rem)]"
-                labelClassName="text-[clamp(0.42rem,0.82cqw,0.64rem)]"
-                valueClassName="text-[clamp(0.82rem,2.9cqw,1.7rem)]"
-                labelClassName="text-[clamp(0.42rem,0.82cqw,0.64rem)]"
               />
               <ProgressRing
                 progress={progress.hours}
@@ -279,10 +275,6 @@ export default function CountdownWidgetCard(props) {
                   valueColor={textColor}
                   labelColor={labelColor}
                   strokeWidth={7}
-                  valueClassName="text-[clamp(0.62rem,2.9cqw,0.92rem)]"
-                  labelClassName="text-[clamp(0.38rem,1.4cqw,0.52rem)]"
-                  valueClassName="text-[clamp(0.62rem,2.9cqw,0.92rem)]"
-                  labelClassName="text-[clamp(0.38rem,1.4cqw,0.52rem)]"
                   valueClassName="text-[clamp(0.62rem,2.9cqw,0.92rem)]"
                   labelClassName="text-[clamp(0.38rem,1.4cqw,0.52rem)]"
                 />

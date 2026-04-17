@@ -1,6 +1,6 @@
 ﻿import axios from 'axios';
 
-const fallbackApiUrl = 'http://localhost:5000/api';
+const fallbackApiUrl = 'http://localhost:3000/api';
 const axiosStatusMessagePattern = /^Request failed with status code \d+$/i;
 
 const statusMessages = {
