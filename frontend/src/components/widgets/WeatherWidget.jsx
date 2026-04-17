@@ -276,7 +276,7 @@ export const buildWeatherPayloadFromDraft = (draft) => {
   return { payload: { city } };
 };
 
-function WeatherGlyph({ code, size = 54 }) {
+function WeatherGlyph({ code, size, className = "" }) {
   const visual = weatherVisualFromCode(code);
   const glyphByKey = {
     clear: "☀️",
@@ -290,8 +290,8 @@ function WeatherGlyph({ code, size = 54 }) {
   return (
     <span
       aria-hidden="true"
-      style={{ fontSize: `${size}px`, lineHeight: 1 }}
-      className="select-none"
+      style={{ ...(size ? { fontSize: `${size}px` } : {}), lineHeight: 1 }}
+      className={`select-none ${className}`}
     >
       {glyphByKey[visual.key] || "☁️"}
     </span>
@@ -396,7 +396,7 @@ export function WeatherWidgetCard(props) {
       {...props}
       showTypeLabel={false}
       controlsTone="light"
-      className="p-[clamp(0.72rem,3.2vw,1.12rem)]"
+      className="@container p-[clamp(0.4rem,3.2cqw,1.12rem)]"
       style={{ background: WEATHER_BACKGROUND, color: "#EFF6FF" }}
       overlay={
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.22),transparent_42%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.12),transparent_34%)]" />
@@ -405,101 +405,116 @@ export function WeatherWidgetCard(props) {
       {widget?.size === "RECT" ? (
         <div
           ref={layoutRef}
-          className="grid h-full w-full grid-cols-2 items-center gap-x-[clamp(0.3rem,1.8vw,0.6rem)] p-[clamp(0.3rem,1.2vw,0.5rem)]"
+          className="grid h-full min-h-0 w-full grid-cols-2 items-center gap-[4%]"
         >
           {/* Left Column: Current Weather */}
-          <div className="flex h-full flex-col items-start justify-between">
+          <div className="flex h-full min-h-0 flex-col items-start justify-between py-[2%]">
             {isLoading ? (
-              <p className="text-sm font-bold text-white/85">Chargement...</p>
+              <p className="text-[clamp(0.4rem,1.5cqw,1rem)] font-bold text-white/85">
+                Chargement...
+              </p>
             ) : error ? (
-              <p className="text-sm font-bold text-red-100">{error}</p>
+              <p className="text-[clamp(0.4rem,1.5cqw,1rem)] font-bold text-red-100">
+                {error}
+              </p>
             ) : weather ? (
               <>
                 <div className="min-w-0 w-full">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/75">
+                  <p className="text-[clamp(0.35rem,1.2cqw,0.85rem)] font-semibold uppercase tracking-[0.2em] text-white/75">
                     Météo
                   </p>
-                  <h3 className="mt-0.5 truncate font-outfit text-[clamp(0.7rem,2.3vw,1rem)] font-black leading-tight">
+                  <h3 className="mt-[2%] truncate font-outfit text-[clamp(0.5rem,2.5cqw,1.5rem)] font-black leading-tight">
                     {locationLabel}
                   </h3>
                 </div>
 
-                <div className="flex w-full items-center justify-start gap-[clamp(0.2rem,1vw,0.35rem)] -my-1">
-                  <WeatherGlyph code={weather.current.weatherCode} size={46} />
+                <div className="flex w-full items-center justify-start gap-[4%]">
+                  <WeatherGlyph
+                    code={weather.current.weatherCode}
+                    className="text-[clamp(1.8rem,8cqw,4.8rem)]"
+                  />
                   <div className="min-w-0">
-                    <p className="font-black leading-none text-[clamp(1.25rem,4.2vw,1.8rem)]">
+                    <p className="font-black leading-none text-[clamp(1rem,5cqw,3.2rem)]">
                       {weather.current.temp ?? "--"}°C
                     </p>
-                    <p className="mt-0.5 truncate text-sm font-semibold text-white/85">
+                    <p className="mt-[4%] truncate text-[clamp(0.5rem,2cqw,1rem)] font-semibold text-white/85">
                       {currentVisual.label}
                     </p>
                   </div>
                 </div>
 
-                <div className="grid w-full max-w-[12rem] grid-cols-3 gap-x-1.5 gap-y-1 text-center">
+                <div className="grid w-[95%] grid-cols-3 gap-x-[4%] gap-y-[2%] text-center">
                   <div>
-                    <p className="text-[8.5px] font-bold uppercase tracking-wider text-white/70">
+                    <p className="text-[clamp(0.3rem,1.2cqw,0.8rem)] font-bold uppercase tracking-wider text-white/70">
                       Ressenti
                     </p>
-                    <p className="mt-0.5 text-xs font-black text-white/95">
+                    <p className="mt-[4%] text-[clamp(0.4rem,1.5cqw,1rem)] font-black text-white/95">
                       {weather.current.feelsLike ?? "--"}°
                     </p>
                   </div>
                   <div>
-                    <p className="text-[8.5px] font-bold uppercase tracking-wider text-white/70">
+                    <p className="text-[clamp(0.3rem,1.2cqw,0.8rem)] font-bold uppercase tracking-wider text-white/70">
                       Humidité
                     </p>
-                    <p className="mt-0.5 text-xs font-black text-white/95">
+                    <p className="mt-[4%] text-[clamp(0.4rem,1.5cqw,1rem)] font-black text-white/95">
                       {weather.current.humidity ?? "--"}%
                     </p>
                   </div>
                   <div>
-                    <p className="text-[8.5px] font-bold uppercase tracking-wider text-white/70">
+                    <p className="text-[clamp(0.3rem,1.2cqw,0.8rem)] font-bold uppercase tracking-wider text-white/70">
                       Vent
                     </p>
-                    <p className="mt-0.5 text-xs font-black text-white/95">
-                      {weather.current.wind ?? "--"} km/h
+                    <p className="mt-[4%] text-[clamp(0.4rem,1.5cqw,1rem)] font-black text-white/95">
+                      {weather.current.wind ?? "--"}{" "}
+                      <span className="text-[clamp(0.3rem,1.1cqw,0.8rem)] font-semibold">
+                        km/h
+                      </span>
                     </p>
                   </div>
                 </div>
               </>
             ) : (
-              <p className="text-sm font-bold text-white/85">
+              <p className="text-[clamp(0.4rem,1.5cqw,1rem)] font-bold text-white/85">
                 Ajoute une ville.
               </p>
             )}
           </div>
 
           {/* Right Column: Forecast */}
-          <div className="flex h-full items-center justify-center">
+          <div className="flex h-full w-full min-h-0 items-center justify-center">
             {isLoading ? (
-              <p className="text-center text-sm font-bold text-white/85">
+              <p className="text-center text-[clamp(0.4rem,1.5cqw,1rem)] font-bold text-white/85">
                 Prévisions...
               </p>
             ) : error ? (
-              <p className="text-center text-sm font-bold text-red-100">--</p>
+              <p className="text-center text-[clamp(0.4rem,1.5cqw,1rem)] font-bold text-red-100">
+                --
+              </p>
             ) : weather?.forecast?.length ? (
-              <div className="grid h-full w-full max-w-[9.5rem] grid-cols-2 grid-rows-2 place-content-center gap-[clamp(0.15rem,0.6vw,0.25rem)]">
+              <div className="grid aspect-square w-full max-h-[90%] max-w-[90%] grid-cols-2 grid-rows-2 gap-[6%]">
                 {weather.forecast.slice(0, 4).map((day) => (
                   <div
                     key={day.dayKey}
-                    className="mx-auto flex aspect-square min-h-0 w-[88%] max-w-[4.2rem] flex-col items-center justify-center rounded-[8px] border border-white/20 bg-white/10 p-0.5 text-center shadow-inner"
+                    className="flex h-full w-full min-h-0 flex-col items-center justify-center rounded-[clamp(8px,1.5cqw,16px)] border border-white/20 bg-white/10 p-[4%] text-center shadow-inner"
                   >
-                    <p className="text-[clamp(0.38rem,1.2vw,0.48rem)] font-black uppercase text-white/95">
+                    <p className="text-[clamp(0.35rem,1.3cqw,0.9rem)] font-black uppercase text-white/95">
                       {day.label}
                     </p>
-                    <WeatherGlyph code={day.weatherCode} size={18} />
-                    <p className="text-[clamp(0.38rem,1.2vw,0.48rem)] font-bold text-white/95">
+                    <WeatherGlyph
+                      code={day.weatherCode}
+                      className="my-[2%] text-[clamp(0.7rem,3.5cqw,2.4rem)]"
+                    />
+                    <p className="text-[clamp(0.35rem,1.4cqw,1rem)] font-bold text-white/95">
                       {day.tempMax ?? "--"}°
                     </p>
-                    <p className="text-[clamp(0.32rem,1vw,0.4rem)] font-semibold text-white/75">
+                    <p className="text-[clamp(0.3rem,1.1cqw,0.85rem)] font-semibold text-white/75">
                       {day.tempMin ?? "--"}°
                     </p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-center text-sm font-bold text-white/85">
+              <p className="text-center text-[clamp(0.4rem,1.5cqw,1rem)] font-bold text-white/85">
                 Aucune prévision.
               </p>
             )}
@@ -622,7 +637,7 @@ export function WeatherWidgetForm({
       <p className="text-xs font-semibold uppercase tracking-[0.28em] text-golden-muted">
         Aperçu
       </p>
-      <div className={`mt-4 w-full ${previewAspectClass}`}>
+      <div className={`@container mt-4 w-full ${previewAspectClass}`}>
         <WeatherWidgetCard
           widget={previewWidget}
           canManageWidgets={false}
