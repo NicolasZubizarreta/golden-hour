@@ -114,6 +114,7 @@ enum WidgetType {
   BUDGET
   COUNTDOWN
   TODO
+  WEATHER
 }
 
 enum WidgetSize {

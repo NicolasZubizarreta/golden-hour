@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import CountdownWidgetCard from './CountdownWidgetCard';
 import CountdownWidgetForm from './CountdownWidgetForm';
 import MusicWidgetCard from './MusicWidgetCard';
@@ -5,6 +6,12 @@ import MusicWidgetForm from './MusicWidgetForm';
 import TestWidgetCard from './TestWidgetCard';
 import ToDoWidgetCard from './ToDoWidgetCard';
 import ToDoWidgetForm from './ToDoWidgetForm';
+import WeatherWidgetCard, {
+  WeatherWidgetForm,
+  buildWeatherPayloadFromDraft,
+  createDefaultWeatherDraft,
+  createWeatherDraftFromData,
+} from './WeatherWidget';
 import {
   buildCountdownPayloadFromDraft,
   createCountdownDraftFromData,
@@ -95,6 +102,26 @@ const WIDGET_DEFINITIONS = [
     renderCatalogIcon: () => (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+    ),
+  },
+  {
+    type: 'WEATHER',
+    title: 'Meteo',
+    subtitle: 'Ville en direct',
+    enabled: true,
+    surfaceClassName: 'bg-[linear-gradient(140deg,#0C4A6E_0%,#0369A1_38%,#0EA5E9_100%)] text-[#EFF6FF]',
+    iconClassName: 'bg-white/18 text-white',
+    previewValue: '21 deg',
+    modalMaxWidthClass: 'max-w-4xl',
+    cardComponent: WeatherWidgetCard,
+    formComponent: WeatherWidgetForm,
+    createDefaultDraft: createDefaultWeatherDraft,
+    createDraftFromData: createWeatherDraftFromData,
+    buildPayloadFromDraft: buildWeatherPayloadFromDraft,
+    renderCatalogIcon: () => (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M3 15a4 4 0 004 4h9a4 4 0 100-8 5 5 0 10-9.7 1.6A3.6 3.6 0 003 15z"></path>
       </svg>
     ),
   },

@@ -31,23 +31,26 @@ export default function WidgetTypePicker({
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2 pr-4 mb-8">
-        <div className={`grid gap-4 w-full transition-all duration-300 ${widgetSize === 'SQUARE' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        <div className={`grid gap-4 w-full transition-all duration-300 ${widgetSize === 'SQUARE' ? 'grid-cols-2' : 'grid-cols-1'} max-[1029px]:grid-cols-2`}>
           {filteredWidgetOptions.map((option) => (
             <button
               key={option.type}
               type="button"
               onClick={() => option.enabled && onSelectWidgetType(option.type)}
               disabled={!option.enabled}
-              className={`${option.surfaceClassName} rounded-golden p-5 flex flex-col items-start text-left transition duration-200 shadow-halo ${widgetSize === 'SQUARE' ? 'aspect-square' : 'aspect-[2.08/1]'} ${option.enabled ? 'hover:-translate-y-1 hover:brightness-[1.02] cursor-pointer' : 'opacity-65 cursor-not-allowed'}`}
+              className={`${option.surfaceClassName} rounded-golden max-[1029px]:rounded-3xl p-5 min-h-0 overflow-hidden flex flex-col items-start text-left transition duration-200 shadow-halo ${widgetSize === 'SQUARE' ? 'aspect-square' : 'aspect-[2.08/1]'} max-[1029px]:aspect-square ${option.enabled ? 'hover:-translate-y-1 hover:brightness-[1.02] cursor-pointer' : 'opacity-65 cursor-not-allowed'}`}
             >
               <div className={`w-10 h-10 rounded-golden flex items-center justify-center mb-auto shadow-halo ${option.iconClassName}`}>
                 {typeof option.renderCatalogIcon === 'function' ? option.renderCatalogIcon() : null}
               </div>
 
-              <div className="mt-auto">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] opacity-75">{option.previewValue}</p>
-                <h3 className="mt-2 text-xl font-black leading-tight">{option.title}</h3>
-                <p className="mt-2 text-sm opacity-85 font-medium">{option.subtitle}</p>
+              <div className="mt-auto w-full min-h-0 overflow-hidden">
+                <h3
+                  className="mt-2 text-xl max-[1029px]:text-base font-black leading-tight overflow-hidden"
+                  style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
+                >
+                  {option.title}
+                </h3>
               </div>
             </button>
           ))}
