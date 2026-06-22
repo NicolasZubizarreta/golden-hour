@@ -3,6 +3,8 @@ import CalendarWidgetCard from './CalendarWidgetCard';
 import CalendarWidgetForm from './CalendarWidgetForm';
 import CountdownWidgetCard from './CountdownWidgetCard';
 import CountdownWidgetForm from './CountdownWidgetForm';
+import MapWidgetCard from './MapWidgetCard';
+import MapWidgetForm from './MapWidgetForm';
 import MusicWidgetCard from './MusicWidgetCard';
 import MusicWidgetForm from './MusicWidgetForm';
 import TestWidgetCard from './TestWidgetCard';
@@ -26,6 +28,12 @@ import {
   createCountdownDraftFromData,
   createDefaultCountdownDraft,
 } from '../../utils/countdown';
+import {
+  buildMapPayloadFromDraft,
+  createDefaultMapDraft,
+  createMapDraftFromData,
+  isMapWidgetSizeAllowed,
+} from '../../utils/mapWidget';
 import {
   buildMusicPayloadFromDraft,
   createDefaultMusicDraft,
@@ -165,17 +173,24 @@ const WIDGET_DEFINITIONS = [
 
   {
     type: 'MAP',
-    title: 'Map',
-    subtitle: 'Bientôt disponible',
-    enabled: false,
-    surfaceClassName: 'bg-[#EBF5FF] text-[#1D4ED8]',
-    iconClassName: 'bg-white text-[#1D4ED8]',
-    previewValue: 'Bientôt',
-    modalMaxWidthClass: 'max-w-2xl',
-    cardComponent: TestWidgetCard,
+    title: 'Carte',
+    subtitle: 'Lieux et activités à visiter',
+    enabled: true,
+    surfaceClassName: 'bg-[linear-gradient(135deg,#134E4A_0%,#0F766E_55%,#115E59_100%)] text-[#CCFBF1]',
+    iconClassName: 'bg-white/18 text-white',
+    previewValue: 'Carte',
+    modalMaxWidthClass: 'max-w-4xl',
+    cardComponent: MapWidgetCard,
+    formComponent: MapWidgetForm,
+    createDefaultDraft: createDefaultMapDraft,
+    createDraftFromData: createMapDraftFromData,
+    buildPayloadFromDraft: buildMapPayloadFromDraft,
+    isSizeAllowed: isMapWidgetSizeAllowed,
+    hideWhenSizeInvalid: true,
     renderCatalogIcon: () => (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 01.553-.894L9 2m0 18l6-3m-6 3V2m6 15l6 3m-6-3V5m6 15V8m0 12l-6-3"></path>
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     ),
   },

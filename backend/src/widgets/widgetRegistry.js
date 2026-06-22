@@ -416,6 +416,37 @@ const normalizeTodoData = (value) => {
   return { data: { title } };
 };
 
+const normalizeMapData = (value) => {
+  if (!isPlainObject(value)) {
+    return { error: 'La configuration du widget carte est invalide.' };
+  }
+
+  const title = normalizeTrimmedString(value.title);
+  if (!title) {
+    return { error: 'Le titre de la carte est obligatoire.' };
+  }
+
+  const rawLocations = Array.isArray(value.locations) ? value.locations : [];
+  const locations = rawLocations
+    .filter(
+      (loc) =>
+        isPlainObject(loc) &&
+        typeof loc.lat === 'number' &&
+        Number.isFinite(loc.lat) &&
+        typeof loc.lng === 'number' &&
+        Number.isFinite(loc.lng),
+    )
+    .map((loc) => ({
+      id: normalizeTrimmedString(loc.id) || String(Math.random()),
+      address: normalizeTrimmedString(loc.address),
+      description: normalizeTrimmedString(loc.description) || normalizeTrimmedString(loc.address),
+      lat: loc.lat,
+      lng: loc.lng,
+    }));
+
+  return { data: { title, locations } };
+};
+
 const normalizeWeatherData = (value) => {
   if (!isPlainObject(value)) {
     return { error: 'La configuration du widget meteo est invalide.' };
@@ -427,6 +458,14 @@ const normalizeWeatherData = (value) => {
   }
 
   return { data: { city } };
+};
+
+const normalizeMapSize = (size) => {
+  if (size !== 'RECT') {
+    return { error: 'Le widget MAP est disponible uniquement en format rectangle.' };
+  }
+
+  return null;
 };
 
 const normalizeTodoSize = (size) => {
@@ -450,6 +489,12 @@ const WIDGET_TYPE_DEFINITIONS = {
     requiresData: true,
     requiredDataMessage: 'Le widget MUSIC doit contenir une configuration.',
     normalizeData: normalizeMusicData,
+  },
+  MAP: {
+    requiresData: true,
+    requiredDataMessage: 'Le widget MAP doit contenir un titre.',
+    validateSize: normalizeMapSize,
+    normalizeData: normalizeMapData,
   },
   TRICOUNT: {
     validateSize: normalizeTricountSize,
