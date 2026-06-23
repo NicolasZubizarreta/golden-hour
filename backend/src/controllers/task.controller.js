@@ -1,4 +1,5 @@
 const prisma = require('../lib/prisma');
+const { sendTaskAssignedEmail } = require('../utils/mailer');
 
 const parsePositiveInt = (value) => {
   if (typeof value === 'number' && Number.isInteger(value) && value > 0) {
@@ -10,6 +11,24 @@ const parsePositiveInt = (value) => {
   }
 
   return null;
+};
+
+// Envoie une notification email à la personne assignée, sans bloquer la réponse API.
+// Volontairement non "await" à l'appel : un échec d'envoi d'email (SMTP down, etc.)
+// ne doit jamais empêcher la création de la tâche ni ralentir la réponse au client.
+const notifyTaskAssignment = async ({ taskTitle, groupId, assigneeId }) => {
+  try {
+    const [assignee, group] = await Promise.all([
+      prisma.user.findUnique({ where: { id: assigneeId }, select: { email: true, name: true } }),
+      prisma.group.findUnique({ where: { id: groupId }, select: { name: true } }),
+    ]);
+
+    if (!assignee?.email) return;
+
+    await sendTaskAssignedEmail(assignee.email, assignee.name, taskTitle, group?.name || 'Golden Hour');
+  } catch (err) {
+    console.error("Erreur lors de l'envoi de la notification d'assignation de tâche:", err);
+  }
 };
 
 const getWidgetWithGroupAccess = async (widgetId, userId) => {
@@ -90,6 +109,12 @@ exports.createTask = async (req, res) => {
         assignee: { select: { id: true, name: true, avatar: true } },
       },
     });
+
+    // Notifie la personne assignée par email (fire-and-forget), sauf si elle s'est
+    // assignée la tâche à elle-même (inutile de se notifier soi-même).
+    if (assignedToId !== null && assignedToId !== req.user.id) {
+      notifyTaskAssignment({ taskTitle: title, groupId: widget.groupId, assigneeId: assignedToId });
+    }
 
     res.status(201).json({ message: 'Tâche créée avec succès.', task });
   } catch (err) {
