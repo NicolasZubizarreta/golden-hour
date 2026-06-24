@@ -7,6 +7,10 @@ export default function WidgetTypePicker({
   onWidgetSizeChange,
   onSelectWidgetType,
 }) {
+  const visibleOptions = filteredWidgetOptions.filter(
+    (option) => !option.forcedSize || option.forcedSize === widgetSize
+  );
+
   return (
     <>
       <h2 className="font-outfit font-black text-3xl text-gray-900 mb-6 w-full text-left">
@@ -46,7 +50,7 @@ export default function WidgetTypePicker({
         <div
           className={`grid gap-4 w-full transition-all duration-300 ${widgetSize === "SQUARE" ? "grid-cols-2" : "grid-cols-1"} max-[1029px]:grid-cols-2`}
         >
-          {filteredWidgetOptions.map((option) => (
+          {visibleOptions.map((option) => (
             <button
               key={option.type}
               type="button"
@@ -78,7 +82,7 @@ export default function WidgetTypePicker({
         </div>
       </div>
 
-      {filteredWidgetOptions.length === 0 && (
+      {visibleOptions.length === 0 && (
         <div className="w-full rounded-golden bg-golden-input px-5 py-8 text-center text-sm font-bold text-golden-muted shadow-creuse">
           Aucun widget ne correspond à cette recherche.
         </div>

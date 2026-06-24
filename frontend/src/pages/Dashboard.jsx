@@ -277,6 +277,10 @@ export default function Dashboard() {
       return;
     }
 
+    if (widgetDefinition.forcedSize) {
+      setWidgetSize(widgetDefinition.forcedSize);
+    }
+
     if (!widgetDefinition.formComponent) {
       handleAddWidget(type);
       return;
@@ -296,7 +300,7 @@ export default function Dashboard() {
 
     setWidgetModalError('');
     setSelectedWidgetType(widget.type);
-    setWidgetSize(widget.size === 'RECT' ? 'RECT' : 'SQUARE');
+    setWidgetSize(widgetDefinition.forcedSize ?? (widget.size === 'RECT' ? 'RECT' : 'SQUARE'));
     setWidgetDrafts((previousDrafts) => ({
       ...previousDrafts,
       [widget.type]: widgetDefinition.createDraftFromData(widget.data),

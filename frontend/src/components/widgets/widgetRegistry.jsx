@@ -1,6 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
 import CountdownWidgetCard from './CountdownWidgetCard';
 import CountdownWidgetForm from './CountdownWidgetForm';
+import SummaryWidgetCard from './SummaryWidgetCard';
+import SummaryWidgetForm from './SummaryWidgetForm';
 import MusicWidgetCard from './MusicWidgetCard';
 import MusicWidgetForm from './MusicWidgetForm';
 import TestWidgetCard from './TestWidgetCard';
@@ -27,8 +29,34 @@ import {
   createDefaultTodoDraft,
   createTodoDraftFromData,
 } from '../../utils/todoWidget';
+import {
+  buildSummaryPayloadFromDraft,
+  createDefaultSummaryDraft,
+  createSummaryDraftFromData,
+} from '../../utils/summaryWidget';
 
 const WIDGET_DEFINITIONS = [
+  {
+    type: 'SUMMARY',
+    title: 'Résumé',
+    subtitle: 'Vue d\'ensemble du groupe',
+    enabled: true,
+    forcedSize: 'RECT',
+    surfaceClassName: 'bg-[linear-gradient(135deg,#3B1F07_0%,#92400E_50%,#CA8A04_100%)] text-[#FEFCE8]',
+    iconClassName: 'bg-white/18 text-white',
+    previewValue: 'Résumé',
+    modalMaxWidthClass: 'max-w-4xl',
+    cardComponent: SummaryWidgetCard,
+    formComponent: SummaryWidgetForm,
+    createDefaultDraft: createDefaultSummaryDraft,
+    createDraftFromData: createSummaryDraftFromData,
+    buildPayloadFromDraft: (draft) => buildSummaryPayloadFromDraft(draft),
+    renderCatalogIcon: () => (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" d="M4 6h16M4 10h16M4 14h8M4 18h8" />
+      </svg>
+    ),
+  },
   {
     type: 'COUNTDOWN',
     title: 'Compte à rebours',
@@ -152,6 +180,7 @@ export const WIDGET_CATALOG = WIDGET_DEFINITIONS.map((definition) => ({
   title: definition.title,
   subtitle: definition.subtitle,
   enabled: definition.enabled,
+  forcedSize: definition.forcedSize ?? null,
   surfaceClassName: definition.surfaceClassName,
   iconClassName: definition.iconClassName,
   previewValue: definition.previewValue,
