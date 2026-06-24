@@ -1,4 +1,4 @@
-const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN', 'TODO', 'CALENDAR', 'TRICOUNT', 'WEATHER'];
+const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN', 'TODO', 'CALENDAR', 'TRICOUNT', 'WEATHER', 'CHAT'];
 const WIDGET_SIZES = ['SQUARE', 'RECT'];
 const COUNTDOWN_TYPES = ['SINGLE', 'RECURRING'];
 const COUNTDOWN_FREQUENCIES = ['WEEKLY', 'MONTHLY_FIRST'];
@@ -460,6 +460,24 @@ const normalizeWeatherData = (value) => {
   return { data: { city } };
 };
 
+const normalizeChatData = (value) => {
+  if (value === undefined || value === null) {
+    return { data: { title: 'Chat du groupe' } };
+  }
+
+  if (!isPlainObject(value)) {
+    return { error: 'La configuration du widget chat est invalide.' };
+  }
+
+  const title = normalizeTrimmedString(value.title) || 'Chat du groupe';
+
+  if (title.length > 60) {
+    return { error: 'Le titre du chat ne peut pas depasser 60 caracteres.' };
+  }
+
+  return { data: { title } };
+};
+
 const normalizeMapSize = (size) => {
   if (size !== 'RECT') {
     return { error: 'Le widget MAP est disponible uniquement en format rectangle.' };
@@ -471,6 +489,14 @@ const normalizeMapSize = (size) => {
 const normalizeTodoSize = (size) => {
   if (size !== 'SQUARE') {
     return { error: 'Le widget TODO est disponible uniquement en format carré.' };
+  }
+
+  return null;
+};
+
+const normalizeChatSize = (size) => {
+  if (size !== 'RECT') {
+    return { error: 'Le widget CHAT est disponible uniquement en format rectangle.' };
   }
 
   return null;
@@ -515,6 +541,10 @@ const WIDGET_TYPE_DEFINITIONS = {
     requiresData: true,
     requiredDataMessage: 'Le widget CALENDAR doit contenir un titre.',
     normalizeData: normalizeCalendarData,
+  },
+  CHAT: {
+    validateSize: normalizeChatSize,
+    normalizeData: normalizeChatData,
   },
 };
 

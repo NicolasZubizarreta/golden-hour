@@ -26,6 +26,7 @@ model User {
   createdGroups  Group[]       @relation("GroupCreator")
   paidExpenses  Expense[]     @relation("ExpensePayer")
   assignedTasks  Task[]        @relation("AssignedTasks")
+  messages       Message[]
 }
 
 // -----------------------------------------------------------------------------
@@ -45,6 +46,7 @@ model Group {
   members   GroupMember[]
   widgets   Widget[]
   expenses  Expense[]
+  messages  Message[]
 }
 
 enum GroupType {
@@ -134,6 +136,7 @@ enum WidgetType {
   TODO
   WEATHER
   CALENDAR
+  CHAT
 }
 
 enum WidgetSize {
@@ -160,4 +163,21 @@ model Expense {
 
   @@index([widgetId])
   @@index([groupId])
+}
+
+// -----------------------------------------------------------------------------
+// 6. MESSAGES (Widget chat temps reel)
+// -----------------------------------------------------------------------------
+model Message {
+  id        Int      @id @default(autoincrement())
+  text      String   @db.VarChar(500)
+  createdAt DateTime @default(now())
+  userId    Int
+  groupId   Int
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, createdAt])
+  @@index([userId])
 }
