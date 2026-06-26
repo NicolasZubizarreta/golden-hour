@@ -146,6 +146,7 @@ export default function WidgetGrid({
         <SortableWidget
           key={widget.id}
           widget={widget}
+          allWidgets={widgets}
           groupMembers={groupMembers}
           canManageWidgets={canManageWidgets}
           canDrag={canDrag}

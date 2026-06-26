@@ -310,6 +310,9 @@ export default function Dashboard() {
       return;
     }
 
+    if (widgetDefinition.forcedSize) {
+      setWidgetSize(widgetDefinition.forcedSize);
+    }
     if (typeof widgetDefinition.isSizeAllowed === 'function' && !widgetDefinition.isSizeAllowed(widgetSize)) {
       setWidgetModalError(getWidgetSizeRestrictionMessage(widgetDefinition));
       return;
@@ -337,6 +340,7 @@ export default function Dashboard() {
 
     setWidgetModalError('');
     setSelectedWidgetType(widget.type);
+    setWidgetSize(widgetDefinition.forcedSize ?? (widget.size === 'RECT' ? 'RECT' : 'SQUARE'));
     const nextWidgetSize = typeof widgetDefinition.isSizeAllowed === 'function' && !widgetDefinition.isSizeAllowed(widget.size)
       ? widgetDefinition.requiredSize || 'SQUARE'
       : widget.size;

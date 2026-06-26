@@ -104,7 +104,7 @@ const getMonthOffset = (date, monthOffset) => {
   return { year, monthIndex };
 };
 
-const normalizeAppearanceFromDraft = (draft) => {
+export const normalizeAppearanceFromDraft = (draft) => {
   const backgroundType = normalizeEnum(draft.backgroundType, Object.values(COUNTDOWN_APPEARANCE_TYPES))
     || COUNTDOWN_APPEARANCE_TYPES.COLOR;
 
@@ -135,7 +135,7 @@ const normalizeAppearanceFromDraft = (draft) => {
   };
 };
 
-const normalizeAppearanceFromWidgetData = (value) => {
+export const normalizeAppearanceFromWidgetData = (value) => {
   if (!isPlainObject(value)) {
     return {
       backgroundType: COUNTDOWN_APPEARANCE_TYPES.COLOR,

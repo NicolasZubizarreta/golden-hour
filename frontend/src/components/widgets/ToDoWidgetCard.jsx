@@ -43,6 +43,10 @@ export default function ToDoWidgetCard(props) {
     return () => { cancelled = true; };
   }, [widget.id, isPreview]);
 
+  const notifyTasksUpdated = () => {
+    window.dispatchEvent(new CustomEvent('golden:tasks-updated', { detail: { widgetId: widget.id } }));
+  };
+
   const handleToggle = async (task) => {
     if (togglingId === task.id || isPreview) return;
 
@@ -53,6 +57,7 @@ export default function ToDoWidgetCard(props) {
     try {
       const { data } = await api.patch(`/tasks/${task.id}`, { isCompleted: next });
       setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, ...(data.task || {}) } : t)));
+      notifyTasksUpdated();
     } catch {
       setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, isCompleted: task.isCompleted } : t)));
     } finally {
@@ -66,6 +71,7 @@ export default function ToDoWidgetCard(props) {
     setTasks((prev) => prev.filter((t) => t.id !== taskId));
     try {
       await api.delete(`/tasks/${taskId}`);
+      notifyTasksUpdated();
     } catch {
       try {
         const { data } = await api.get(`/widgets/${widget.id}/tasks`);
@@ -88,6 +94,9 @@ export default function ToDoWidgetCard(props) {
       setTasks((prev) => [...prev, data.task]);
       setNewTitle('');
       setNewAssigneeId('');
+      if (!isRect) setShowAddForm(false);
+      if (isRect) rectInputRef.current?.focus();
+      notifyTasksUpdated();
       setShowAddForm(false);
     } catch (err) {
       setAddError(getApiErrorMessage(err, "Impossible d'ajouter la tâche."));

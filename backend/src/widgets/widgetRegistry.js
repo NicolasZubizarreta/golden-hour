@@ -1,4 +1,4 @@
-const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN', 'TODO', 'CALENDAR', 'TRICOUNT', 'WEATHER', 'CHAT'];
+const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN', 'TODO', 'CALENDAR', 'TRICOUNT', 'WEATHER', 'CHAT', 'SUMMARY'];
 const WIDGET_SIZES = ['SQUARE', 'RECT'];
 const COUNTDOWN_TYPES = ['SINGLE', 'RECURRING'];
 const COUNTDOWN_FREQUENCIES = ['WEEKLY', 'MONTHLY_FIRST'];
@@ -366,6 +366,19 @@ const buildDefaultTestData = (size, position) => {
   };
 };
 
+const normalizeSummaryData = (value) => {
+  if (value === undefined || value === null) {
+    return { data: { appearance: { backgroundType: 'COLOR', backgroundColor: '#3B1F07' } } };
+  }
+
+  if (!isPlainObject(value)) {
+    return { error: 'La configuration du widget résumé est invalide.' };
+  }
+
+  const appearance = normalizeCountdownAppearance(value.appearance);
+  if (appearance.error) return { error: appearance.error };
+
+  return { data: { appearance } };
 const normalizeTricountData = (value) => {
   if (value === undefined || value === null) {
     return { data: { title: 'Tricount', currency: 'EUR' } };
@@ -536,6 +549,9 @@ const WIDGET_TYPE_DEFINITIONS = {
     requiresData: true,
     requiredDataMessage: 'Le widget WEATHER doit contenir une ville.',
     normalizeData: normalizeWeatherData,
+  },
+  SUMMARY: {
+    normalizeData: normalizeSummaryData,
   },
   CALENDAR: {
     requiresData: true,

@@ -5,6 +5,7 @@ import WeatherWidgetCard from './WeatherWidget';
 
 export default function SortableWidget({
   widget,
+  allWidgets = [],
   groupMembers = [],
   canManageWidgets,
   canDrag,
@@ -58,6 +59,7 @@ export default function SortableWidget({
     >
       {renderWidgetCard({
         widget,
+        allWidgets,
         groupMembers,
         canManageWidgets,
         canDrag,

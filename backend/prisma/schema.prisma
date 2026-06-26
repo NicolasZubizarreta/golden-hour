@@ -135,6 +135,7 @@ enum WidgetType {
   TRICOUNT
   TODO
   WEATHER
+  SUMMARY
   CALENDAR
   CHAT
 }
