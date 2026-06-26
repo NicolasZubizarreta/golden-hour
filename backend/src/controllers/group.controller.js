@@ -534,3 +534,61 @@ exports.transferOwnership = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur.", error: error.message });
   }
 };
+
+// --- 10. RÉGÉNÉRER LE CODE D'INVITATION (PUT) ---
+// Permet à l'ADMIN de révoquer l'ancien code (s'il a fuité / été partagé trop largement)
+// en le remplaçant par un nouveau. Toute personne ayant uniquement l'ancien code
+// ne pourra plus rejoindre le groupe avec.
+exports.regenerateInviteCode = async (req, res) => {
+  try {
+    const groupId = parsePositiveInt(req.params.id);
+
+    if (groupId === null) {
+      return res.status(400).json({ message: "ID du groupe invalide." });
+    }
+
+    let updatedGroup = null;
+    let attempts = 0;
+
+    // Même pattern de retry que createGroup, pour gérer la collision possible
+    // (rare mais non nulle) sur la contrainte @unique du inviteCode.
+    while (!updatedGroup && attempts < 5) {
+      try {
+        updatedGroup = await prisma.group.update({
+          where: { id: groupId },
+          data: { inviteCode: generateInviteCode() },
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            inviteCode: true,
+            coverImage: true,
+            createdById: true,
+          },
+        });
+      } catch (error) {
+        if (error.code === 'P2002') {
+          attempts++;
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    if (!updatedGroup) {
+      return res.status(500).json({ message: "Impossible de générer un nouveau code d'invitation après plusieurs tentatives." });
+    }
+
+    res.status(200).json({
+      message: "Code d'invitation régénéré avec succès. L'ancien code n'est plus valide.",
+      group: updatedGroup,
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: "Groupe introuvable." });
+    }
+
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur.", error: error.message });
+  }
+};

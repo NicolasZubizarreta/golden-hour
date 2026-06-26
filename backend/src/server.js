@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const prisma = require('./lib/prisma');
 const authRoutes = require('./routes/auth.routes');
@@ -9,6 +11,8 @@ const groupRoutes = require('./routes/group.routes');
 const userRoutes = require('./routes/user.routes');
 const widgetTaskRoutes = require('./routes/widgetTask.routes');
 const taskRoutes = require('./routes/task.routes');
+const eventRoutes = require('./routes/event.routes');
+const configureChatSocket = require('./sockets/chatSocket');
 const { ensureUploadDirectories } = require('./utils/uploads');
 
 const app = express();
@@ -59,6 +63,7 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/widgets', widgetTaskRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/events', eventRoutes);
 
 app.use((error, req, res, next) => {
   if (error?.type === 'entity.too.large') {
@@ -68,17 +73,28 @@ app.use((error, req, res, next) => {
   return next(error);
 });
 
-// Route de Health Check (Vérification serveur/BDD)
+// Route de Health Check (verification serveur/BDD)
 app.get('/api/health', async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
-    res.status(200).json({ status: 'OK', message: 'Serveur et BDD opérationnels ! 🚀' });
+    res.status(200).json({ status: 'OK', message: 'Serveur et BDD operationnels.' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ status: 'ERROR', message: 'Erreur BDD' });
   }
 });
 
-// Lancement du serveur
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Serveur réseau ouvert sur le port ${PORT}`));
+// Lancement du serveur HTTP + WebSocket sur le meme port.
+const PORT = process.env.PORT || 3000;
+const httpServer = http.createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: corsOptions.origin,
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  },
+});
+
+configureChatSocket(io);
+
+httpServer.listen(PORT, '0.0.0.0', () => console.log(`Serveur reseau ouvert sur le port ${PORT}`));

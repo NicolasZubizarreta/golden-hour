@@ -19,6 +19,12 @@ const normalizeSearchValue = (value = '') => value
   .replace(/[\u0300-\u036f]/g, '')
   .trim();
 
+const getWidgetSizeRestrictionMessage = (widgetDefinition) => (
+  widgetDefinition?.requiredSize === 'RECT'
+    ? 'Ce widget est disponible uniquement en format rectangle.'
+    : 'Ce widget est disponible uniquement en format carré.'
+);
+
 export default function Dashboard() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -113,6 +119,20 @@ export default function Dashboard() {
     navigator.clipboard.writeText(group.inviteCode);
     setCopySuccess(true);
     setTimeout(() => setCopySuccess(false), 2000);
+  };
+
+  const handleRegenerateCode = async () => {
+    if (!window.confirm("Régénérer le code ? L'ancien code ne permettra plus de rejoindre le groupe.")) return;
+    setError('');
+    setActionLoading('regenerate-code');
+    try {
+      const { data } = await api.put(`/groups/${id}/invite-code`);
+      setGroup((previousGroup) => previousGroup ? { ...previousGroup, inviteCode: data.group.inviteCode } : previousGroup);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Impossible de régénérer le code.'));
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleStartRenameGroup = () => {
@@ -245,6 +265,19 @@ export default function Dashboard() {
   };
 
   const handleAddWidget = async (type, widgetData = null) => {
+    const widgetDefinition = getWidgetDefinition(type);
+
+    if (!widgetDefinition?.enabled) {
+      return;
+    }
+
+    if (typeof widgetDefinition.isSizeAllowed === 'function' && !widgetDefinition.isSizeAllowed(widgetSize)) {
+      const message = getWidgetSizeRestrictionMessage(widgetDefinition);
+      setError(message);
+      setWidgetModalError(message);
+      return;
+    }
+
     setError('');
     setWidgetModalError('');
     setActionLoading(`add-widget-${widgetSize}`);
@@ -280,6 +313,10 @@ export default function Dashboard() {
     if (widgetDefinition.forcedSize) {
       setWidgetSize(widgetDefinition.forcedSize);
     }
+    if (typeof widgetDefinition.isSizeAllowed === 'function' && !widgetDefinition.isSizeAllowed(widgetSize)) {
+      setWidgetModalError(getWidgetSizeRestrictionMessage(widgetDefinition));
+      return;
+    }
 
     if (!widgetDefinition.formComponent) {
       handleAddWidget(type);
@@ -289,6 +326,9 @@ export default function Dashboard() {
     setSelectedWidgetType(type);
     setWidgetModalError('');
     setEditingWidgetId(null);
+    if (widgetDefinition.requiredSize) {
+      setWidgetSize(widgetDefinition.requiredSize);
+    }
   };
 
   const handleStartEditWidget = (widget) => {
@@ -301,6 +341,10 @@ export default function Dashboard() {
     setWidgetModalError('');
     setSelectedWidgetType(widget.type);
     setWidgetSize(widgetDefinition.forcedSize ?? (widget.size === 'RECT' ? 'RECT' : 'SQUARE'));
+    const nextWidgetSize = typeof widgetDefinition.isSizeAllowed === 'function' && !widgetDefinition.isSizeAllowed(widget.size)
+      ? widgetDefinition.requiredSize || 'SQUARE'
+      : widget.size;
+    setWidgetSize(nextWidgetSize === 'RECT' ? 'RECT' : 'SQUARE');
     setWidgetDrafts((previousDrafts) => ({
       ...previousDrafts,
       [widget.type]: widgetDefinition.createDraftFromData(widget.data),
@@ -335,6 +379,11 @@ export default function Dashboard() {
 
     if (!widgetDefinition || typeof widgetDefinition.buildPayloadFromDraft !== 'function') {
       setWidgetModalError("La configuration de ce widget n'est pas disponible.");
+      return;
+    }
+
+    if (typeof widgetDefinition.isSizeAllowed === 'function' && !widgetDefinition.isSizeAllowed(widgetSize)) {
+      setWidgetModalError(getWidgetSizeRestrictionMessage(widgetDefinition));
       return;
     }
 
@@ -540,6 +589,15 @@ export default function Dashboard() {
                     <button onClick={handleLeaveGroup} className="py-3 text-red-500 hover:text-red-700 transition cursor-pointer">Quitter le groupe</button>
                   )}
                   {isCreator && (
+                    <button
+                      onClick={handleRegenerateCode}
+                      disabled={actionLoading === 'regenerate-code'}
+                      className="py-3 text-gray-700 hover:text-black transition cursor-pointer disabled:opacity-50"
+                    >
+                      Régénérer le code d'invitation
+                    </button>
+                  )}
+                  {isCreator && (
                     <>
                       <div className="w-full h-px bg-red-100 my-1"></div>
                       <button onClick={handleDeleteGroup} className="py-3 text-red-500 hover:text-red-700 transition cursor-pointer">Supprimer le groupe</button>
@@ -572,12 +630,12 @@ export default function Dashboard() {
               {canManageTeam && (
                 <button
                   onClick={handleOpenWidgetModal}
-                  className="col-span-1 aspect-square self-start overflow-hidden bg-white/60 backdrop-blur-[10px] border-[3px] border-dashed border-gray-300 rounded-golden flex flex-col items-center justify-center p-4 sm:p-8 hover:bg-white transition group shadow-halo cursor-pointer w-full min-h-0"
+                  className="col-span-1 aspect-square self-start overflow-hidden bg-white/60 backdrop-blur-[10px] border-[3px] border-dashed border-gray-300 rounded-golden flex flex-col items-center justify-center [container-type:inline-size] p-[clamp(0.75rem,8cqw,2rem)] hover:bg-white transition group shadow-halo cursor-pointer w-full min-h-0"
                 >
-                  <div className="w-11 h-11 sm:w-14 sm:h-14 bg-gray-400 rounded-golden flex items-center justify-center text-white text-2xl sm:text-3xl font-light group-hover:scale-110 transition-transform mb-3 sm:mb-4 shadow-halo shrink-0">
+                  <div className="h-[clamp(2rem,28cqw,3.5rem)] w-[clamp(2rem,28cqw,3.5rem)] bg-gray-400 rounded-golden flex items-center justify-center text-white text-[clamp(1.25rem,16cqw,1.875rem)] font-light group-hover:scale-110 transition-transform mb-[clamp(0.45rem,5cqw,1rem)] shadow-halo shrink-0">
                     +
                   </div>
-                  <span className="font-bold text-gray-600 text-xs sm:text-sm text-center leading-tight max-w-[8rem] sm:max-w-none">
+                  <span className="font-bold text-gray-600 text-[clamp(0.58rem,6cqw,0.875rem)] text-center leading-tight max-w-[8rem] sm:max-w-none">
                     Ajouter un Widget
                   </span>
                 </button>
@@ -646,4 +704,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

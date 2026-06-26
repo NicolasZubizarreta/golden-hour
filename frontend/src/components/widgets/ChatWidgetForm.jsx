@@ -1,6 +1,6 @@
-import ToDoWidgetCard from './ToDoWidgetCard';
+import ChatWidgetCard from './ChatWidgetCard';
 
-export default function ToDoWidgetForm({
+export default function ChatWidgetForm({
   draft,
   modalError,
   isSubmitting,
@@ -10,26 +10,26 @@ export default function ToDoWidgetForm({
   onSubmit,
 }) {
   const previewWidget = {
-    id: 'preview-todo',
-    type: 'TODO',
-    size: 'SQUARE',
-    data: { title: draft.title || 'Liste de tâches' },
+    id: 'preview-chat',
+    type: 'CHAT',
+    size: 'RECT',
+    groupId: null,
+    data: { title: draft.title || 'Chat du groupe' },
   };
 
-  const previewWidthClass = 'max-w-[360px]';
-  const previewAspectClass = 'aspect-square';
+  const previewWidthClass = 'max-w-[760px]';
+  const previewAspectClass = 'aspect-[2.08/1]';
 
   const PreviewCard = (
     <div className={`w-full ${previewWidthClass}`}>
       <p className="text-xs font-semibold uppercase tracking-[0.28em] text-golden-muted">Apercu</p>
       <div className={`mt-4 w-full ${previewAspectClass}`}>
-        <ToDoWidgetCard
+        <ChatWidgetCard
           widget={previewWidget}
           canManageWidgets={false}
           canDrag={false}
           isDeleting={false}
           onDelete={() => {}}
-          groupMembers={[]}
         />
       </div>
     </div>
@@ -50,11 +50,11 @@ export default function ToDoWidgetForm({
         </button>
 
         <div className="hidden rounded-golden bg-golden-input px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-golden-text shadow-creuse sm:block">
-          Carré uniquement
+          Rectangle
         </div>
       </div>
 
-      <div className="mt-6 flex min-h-0 flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(300px,0.95fr)] lg:gap-8">
+      <div className="mt-6 flex min-h-0 flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)] lg:gap-8">
         <form
           className="flex min-h-0 flex-col gap-6 pb-8 pr-2 sm:pr-3 lg:overflow-y-auto lg:pb-2 lg:pr-4"
           onSubmit={onSubmit}
@@ -62,12 +62,10 @@ export default function ToDoWidgetForm({
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-golden-muted">Widget</p>
             <h2 className="mt-2 text-3xl font-black text-golden-text">
-              {isEditing ? 'Modifier la liste' : 'Liste de tâches'}
+              {isEditing ? 'Modifier le chat' : 'Chat temps reel'}
             </h2>
             <p className="mt-2 text-sm font-medium text-golden-muted">
-              {isEditing
-                ? 'Modifie le titre de la liste. Les tâches se gèrent directement sur le widget.'
-                : 'Donne un titre à ta liste. Tu pourras ensuite ajouter des tâches et assigner des membres directement sur le widget.'}
+              Centralise les messages du groupe dans un salon prive lie a ce dashboard.
             </p>
           </div>
 
@@ -78,12 +76,13 @@ export default function ToDoWidgetForm({
           )}
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-bold text-golden-text">Titre de la liste</span>
+            <span className="text-sm font-bold text-golden-text">Titre du chat</span>
             <input
               type="text"
               value={draft.title}
               onChange={(event) => onChange('title', event.target.value)}
-              placeholder="Ex: Préparatifs du voyage"
+              placeholder="Ex: Discussion du groupe"
+              maxLength={60}
               className="w-full rounded-golden bg-golden-input px-5 py-3 text-sm font-medium text-golden-text shadow-creuse focus:outline-none focus:ring-2 focus:ring-golden-primary"
             />
           </label>
@@ -98,13 +97,11 @@ export default function ToDoWidgetForm({
               : (isEditing ? 'Enregistrer les modifications' : 'Ajouter au Dashboard')}
           </button>
 
-          {/* Mobile preview */}
           <div className="border-t border-black/10 pt-6 lg:hidden">
             {PreviewCard}
           </div>
         </form>
 
-        {/* Desktop preview */}
         <div className="hidden min-h-0 flex-col gap-5 px-2 pb-3 lg:flex lg:overflow-y-auto">
           {PreviewCard}
         </div>

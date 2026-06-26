@@ -85,6 +85,20 @@ export default function DashboardMobileSettings() {
     setTimeout(() => setCopySuccess(false), 2000);
   };
 
+  const handleRegenerateCode = async () => {
+    if (!window.confirm("Régénérer le code ? L'ancien code ne permettra plus de rejoindre le groupe.")) return;
+    setError('');
+    setActionLoading('regenerate-code');
+    try {
+      const { data } = await api.put(`/groups/${id}/invite-code`);
+      setGroup((previousGroup) => previousGroup ? { ...previousGroup, inviteCode: data.group.inviteCode } : previousGroup);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Impossible de régénérer le code.'));
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleStartRenameGroup = () => {
     setGroupNameInput(group?.name || '');
     setIsEditingGroupName(true);
@@ -332,6 +346,16 @@ export default function DashboardMobileSettings() {
                   className="w-full bg-golden-primary text-gray-900 rounded-golden px-5 py-3 text-sm font-extrabold shadow-halo cursor-pointer disabled:cursor-not-allowed"
                 >
                   {actionLoading === 'cover-upload' ? 'Envoi...' : "Changer le fond d'ecran"}
+                </button>
+              )}
+
+              {isCreator && (
+                <button
+                  onClick={handleRegenerateCode}
+                  disabled={actionLoading === 'regenerate-code'}
+                  className="w-full bg-white text-gray-700 rounded-golden px-5 py-3 text-sm font-extrabold shadow-halo cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {actionLoading === 'regenerate-code' ? 'Régénération...' : "Régénérer le code d'invitation"}
                 </button>
               )}
 

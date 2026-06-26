@@ -1,7 +1,8 @@
-import ToDoWidgetCard from './ToDoWidgetCard';
+import CalendarWidgetCard from './CalendarWidgetCard';
 
-export default function ToDoWidgetForm({
+export default function CalendarWidgetForm({
   draft,
+  widgetSize,
   modalError,
   isSubmitting,
   isEditing = false,
@@ -10,26 +11,25 @@ export default function ToDoWidgetForm({
   onSubmit,
 }) {
   const previewWidget = {
-    id: 'preview-todo',
-    type: 'TODO',
-    size: 'SQUARE',
-    data: { title: draft.title || 'Liste de tâches' },
+    id: 'preview-calendar',
+    type: 'CALENDAR',
+    size: widgetSize,
+    data: { title: draft.title || 'Calendrier' },
   };
 
-  const previewWidthClass = 'max-w-[360px]';
-  const previewAspectClass = 'aspect-square';
+  const previewWidthClass = widgetSize === 'RECT' ? 'max-w-[760px]' : 'max-w-[360px]';
+  const previewAspectClass = widgetSize === 'RECT' ? 'aspect-[2.08/1]' : 'aspect-square';
 
   const PreviewCard = (
     <div className={`w-full ${previewWidthClass}`}>
       <p className="text-xs font-semibold uppercase tracking-[0.28em] text-golden-muted">Apercu</p>
       <div className={`mt-4 w-full ${previewAspectClass}`}>
-        <ToDoWidgetCard
+        <CalendarWidgetCard
           widget={previewWidget}
           canManageWidgets={false}
           canDrag={false}
           isDeleting={false}
           onDelete={() => {}}
-          groupMembers={[]}
         />
       </div>
     </div>
@@ -50,7 +50,7 @@ export default function ToDoWidgetForm({
         </button>
 
         <div className="hidden rounded-golden bg-golden-input px-4 py-2 text-xs font-black uppercase tracking-[0.24em] text-golden-text shadow-creuse sm:block">
-          Carré uniquement
+          {widgetSize === 'RECT' ? 'Rectangle' : 'Carre'}
         </div>
       </div>
 
@@ -62,12 +62,12 @@ export default function ToDoWidgetForm({
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-golden-muted">Widget</p>
             <h2 className="mt-2 text-3xl font-black text-golden-text">
-              {isEditing ? 'Modifier la liste' : 'Liste de tâches'}
+              {isEditing ? 'Modifier le calendrier' : 'Calendrier / Itinéraire'}
             </h2>
             <p className="mt-2 text-sm font-medium text-golden-muted">
               {isEditing
-                ? 'Modifie le titre de la liste. Les tâches se gèrent directement sur le widget.'
-                : 'Donne un titre à ta liste. Tu pourras ensuite ajouter des tâches et assigner des membres directement sur le widget.'}
+                ? 'Modifie le titre du calendrier. Les événements se gèrent directement sur le widget.'
+                : 'Donne un nom à ton itinéraire. Tu pourras ensuite ajouter des événements avec leurs dates et horaires directement sur le widget.'}
             </p>
           </div>
 
@@ -78,12 +78,12 @@ export default function ToDoWidgetForm({
           )}
 
           <label className="flex flex-col gap-2">
-            <span className="text-sm font-bold text-golden-text">Titre de la liste</span>
+            <span className="text-sm font-bold text-golden-text">Nom du calendrier</span>
             <input
               type="text"
               value={draft.title}
               onChange={(event) => onChange('title', event.target.value)}
-              placeholder="Ex: Préparatifs du voyage"
+              placeholder="Ex: Itinéraire Tokyo 2026"
               className="w-full rounded-golden bg-golden-input px-5 py-3 text-sm font-medium text-golden-text shadow-creuse focus:outline-none focus:ring-2 focus:ring-golden-primary"
             />
           </label>

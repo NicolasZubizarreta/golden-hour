@@ -1,4 +1,4 @@
-const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN', 'TODO', 'WEATHER', 'SUMMARY'];
+const WIDGET_TYPES = ['TEST', 'NOTES', 'MAP', 'MUSIC', 'BUDGET', 'COUNTDOWN', 'TODO', 'CALENDAR', 'TRICOUNT', 'WEATHER', 'CHAT', 'SUMMARY'];
 const WIDGET_SIZES = ['SQUARE', 'RECT'];
 const COUNTDOWN_TYPES = ['SINGLE', 'RECURRING'];
 const COUNTDOWN_FREQUENCIES = ['WEEKLY', 'MONTHLY_FIRST'];
@@ -379,6 +379,41 @@ const normalizeSummaryData = (value) => {
   if (appearance.error) return { error: appearance.error };
 
   return { data: { appearance } };
+const normalizeTricountData = (value) => {
+  if (value === undefined || value === null) {
+    return { data: { title: 'Tricount', currency: 'EUR' } };
+  }
+
+  if (!isPlainObject(value)) {
+    return { error: 'La configuration du widget Tricount est invalide.' };
+  }
+
+  const title = normalizeTrimmedString(value.title) || 'Tricount';
+  const allowedCurrencies = ['EUR', 'USD', 'GBP', 'CHF', 'CAD', 'AUD'];
+  const currency = allowedCurrencies.includes(value.currency) ? value.currency : 'EUR';
+
+  return { data: { title, currency } };
+};
+
+const normalizeTricountSize = (size) => {
+  if (size !== 'RECT') {
+    return { error: 'Le widget TRICOUNT est disponible uniquement en format rectangle.' };
+  }
+
+  return null;
+};
+
+const normalizeCalendarData = (value) => {
+  if (!isPlainObject(value)) {
+    return { error: 'La configuration du widget calendrier est invalide.' };
+  }
+
+  const title = normalizeTrimmedString(value.title);
+  if (!title) {
+    return { error: "Le titre du calendrier est obligatoire." };
+  }
+
+  return { data: { title } };
 };
 
 const normalizeTodoData = (value) => {
@@ -394,6 +429,37 @@ const normalizeTodoData = (value) => {
   return { data: { title } };
 };
 
+const normalizeMapData = (value) => {
+  if (!isPlainObject(value)) {
+    return { error: 'La configuration du widget carte est invalide.' };
+  }
+
+  const title = normalizeTrimmedString(value.title);
+  if (!title) {
+    return { error: 'Le titre de la carte est obligatoire.' };
+  }
+
+  const rawLocations = Array.isArray(value.locations) ? value.locations : [];
+  const locations = rawLocations
+    .filter(
+      (loc) =>
+        isPlainObject(loc) &&
+        typeof loc.lat === 'number' &&
+        Number.isFinite(loc.lat) &&
+        typeof loc.lng === 'number' &&
+        Number.isFinite(loc.lng),
+    )
+    .map((loc) => ({
+      id: normalizeTrimmedString(loc.id) || String(Math.random()),
+      address: normalizeTrimmedString(loc.address),
+      description: normalizeTrimmedString(loc.description) || normalizeTrimmedString(loc.address),
+      lat: loc.lat,
+      lng: loc.lng,
+    }));
+
+  return { data: { title, locations } };
+};
+
 const normalizeWeatherData = (value) => {
   if (!isPlainObject(value)) {
     return { error: 'La configuration du widget meteo est invalide.' };
@@ -405,6 +471,48 @@ const normalizeWeatherData = (value) => {
   }
 
   return { data: { city } };
+};
+
+const normalizeChatData = (value) => {
+  if (value === undefined || value === null) {
+    return { data: { title: 'Chat du groupe' } };
+  }
+
+  if (!isPlainObject(value)) {
+    return { error: 'La configuration du widget chat est invalide.' };
+  }
+
+  const title = normalizeTrimmedString(value.title) || 'Chat du groupe';
+
+  if (title.length > 60) {
+    return { error: 'Le titre du chat ne peut pas depasser 60 caracteres.' };
+  }
+
+  return { data: { title } };
+};
+
+const normalizeMapSize = (size) => {
+  if (size !== 'RECT') {
+    return { error: 'Le widget MAP est disponible uniquement en format rectangle.' };
+  }
+
+  return null;
+};
+
+const normalizeTodoSize = (size) => {
+  if (size !== 'SQUARE') {
+    return { error: 'Le widget TODO est disponible uniquement en format carré.' };
+  }
+
+  return null;
+};
+
+const normalizeChatSize = (size) => {
+  if (size !== 'RECT') {
+    return { error: 'Le widget CHAT est disponible uniquement en format rectangle.' };
+  }
+
+  return null;
 };
 
 const WIDGET_TYPE_DEFINITIONS = {
@@ -421,9 +529,20 @@ const WIDGET_TYPE_DEFINITIONS = {
     requiredDataMessage: 'Le widget MUSIC doit contenir une configuration.',
     normalizeData: normalizeMusicData,
   },
+  MAP: {
+    requiresData: true,
+    requiredDataMessage: 'Le widget MAP doit contenir un titre.',
+    validateSize: normalizeMapSize,
+    normalizeData: normalizeMapData,
+  },
+  TRICOUNT: {
+    validateSize: normalizeTricountSize,
+    normalizeData: normalizeTricountData,
+  },
   TODO: {
     requiresData: true,
     requiredDataMessage: 'Le widget TODO doit contenir un titre.',
+    validateSize: normalizeTodoSize,
     normalizeData: normalizeTodoData,
   },
   WEATHER: {
@@ -434,6 +553,15 @@ const WIDGET_TYPE_DEFINITIONS = {
   SUMMARY: {
     normalizeData: normalizeSummaryData,
   },
+  CALENDAR: {
+    requiresData: true,
+    requiredDataMessage: 'Le widget CALENDAR doit contenir un titre.',
+    normalizeData: normalizeCalendarData,
+  },
+  CHAT: {
+    validateSize: normalizeChatSize,
+    normalizeData: normalizeChatData,
+  },
 };
 
 const normalizeWidgetDataForPersist = async ({ type, size, rawData, position = 0 }) => {
@@ -442,6 +570,14 @@ const normalizeWidgetDataForPersist = async ({ type, size, rawData, position = 0
   }
 
   const definition = WIDGET_TYPE_DEFINITIONS[type];
+
+  if (typeof definition?.validateSize === 'function') {
+    const sizeValidation = definition.validateSize(size);
+
+    if (sizeValidation?.error) {
+      return sizeValidation;
+    }
+  }
 
   if (definition?.normalizeData) {
     if ((rawData === undefined || rawData === null) && definition.requiresData) {

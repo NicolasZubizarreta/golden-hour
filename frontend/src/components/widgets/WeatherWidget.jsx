@@ -495,7 +495,7 @@ export function WeatherWidgetCard(props) {
                 {weather.forecast.slice(0, 4).map((day) => (
                   <div
                     key={day.dayKey}
-                    className="flex h-full w-full min-h-0 flex-col items-center justify-center rounded-[clamp(8px,1.5cqw,16px)] border border-white/20 bg-white/10 p-[4%] text-center shadow-inner"
+                    className="flex h-full w-full min-h-0 flex-col items-center justify-center rounded-golden bg-white/10 p-[4%] text-center shadow-halo"
                   >
                     <p className="text-[clamp(0.35rem,1.3cqw,0.9rem)] font-black uppercase text-white/95">
                       {day.label}
