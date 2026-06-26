@@ -17,6 +17,7 @@ router.post('/:id/cover', verifyToken, checkRole(['ADMIN', 'EDITOR']), coverUplo
 router.put('/:id/members/:userId', verifyToken, checkRole(['ADMIN']), groupController.updateMemberRole);
 router.delete('/:id/members/:userId', verifyToken, checkRole(['ADMIN', 'EDITOR'], { allowSelf: true }), groupController.removeMember);
 router.put('/:id/transfer', verifyToken, checkRole(['ADMIN'], { creatorOnly: true }), groupController.transferOwnership);
+router.put('/:id/invite-code', verifyToken, checkRole(['ADMIN']), groupController.regenerateInviteCode);
 router.delete('/:id', verifyToken, checkRole(['ADMIN'], { creatorOnly: true }), groupController.deleteGroup);
 
 module.exports = router;

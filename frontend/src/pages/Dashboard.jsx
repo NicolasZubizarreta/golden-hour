@@ -121,6 +121,20 @@ export default function Dashboard() {
     setTimeout(() => setCopySuccess(false), 2000);
   };
 
+  const handleRegenerateCode = async () => {
+    if (!window.confirm("Régénérer le code ? L'ancien code ne permettra plus de rejoindre le groupe.")) return;
+    setError('');
+    setActionLoading('regenerate-code');
+    try {
+      const { data } = await api.put(`/groups/${id}/invite-code`);
+      setGroup((previousGroup) => previousGroup ? { ...previousGroup, inviteCode: data.group.inviteCode } : previousGroup);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Impossible de régénérer le code.'));
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleStartRenameGroup = () => {
     setGroupNameInput(group?.name || '');
     setIsEditingGroupName(true);
@@ -569,6 +583,15 @@ export default function Dashboard() {
                   )}
                   {!isCreator && (
                     <button onClick={handleLeaveGroup} className="py-3 text-red-500 hover:text-red-700 transition cursor-pointer">Quitter le groupe</button>
+                  )}
+                  {isCreator && (
+                    <button
+                      onClick={handleRegenerateCode}
+                      disabled={actionLoading === 'regenerate-code'}
+                      className="py-3 text-gray-700 hover:text-black transition cursor-pointer disabled:opacity-50"
+                    >
+                      Régénérer le code d'invitation
+                    </button>
                   )}
                   {isCreator && (
                     <>
