@@ -379,6 +379,8 @@ const normalizeSummaryData = (value) => {
   if (appearance.error) return { error: appearance.error };
 
   return { data: { appearance } };
+};
+
 const normalizeTricountData = (value) => {
   if (value === undefined || value === null) {
     return { data: { title: 'Tricount', currency: 'EUR' } };
