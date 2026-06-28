@@ -7,9 +7,6 @@ export default function WidgetTypePicker({
   onWidgetSizeChange,
   onSelectWidgetType,
 }) {
-  const visibleOptions = filteredWidgetOptions.filter(
-    (option) => !option.forcedSize || option.forcedSize === widgetSize
-  );
   const visibleWidgetOptions = filteredWidgetOptions.filter((option) => {
     const isAllowedForSize = typeof option.isSizeAllowed === 'function'
       ? option.isSizeAllowed(widgetSize)
@@ -59,16 +56,6 @@ export default function WidgetTypePicker({
             widgetSize === 'SQUARE' ? 'grid-cols-2' : 'grid-cols-1'
           } max-[1029px]:grid-cols-2`}
         >
-          {visibleOptions.map((option) => (
-            <button
-              key={option.type}
-              type="button"
-              onClick={() => option.enabled && onSelectWidgetType(option.type)}
-              disabled={!option.enabled}
-              className={`${option.surfaceClassName} rounded-golden max-[1029px]:rounded-3xl p-5 min-h-0 overflow-hidden flex flex-col items-start text-left transition duration-200 shadow-halo ${widgetSize === "SQUARE" ? "aspect-square" : "aspect-[2.08/1]"} max-[1029px]:aspect-square ${option.enabled ? "hover:-translate-y-1 hover:brightness-[1.02] cursor-pointer" : "opacity-65 cursor-not-allowed"}`}
-            >
-              <div
-                className={`w-10 h-10 rounded-golden flex items-center justify-center mb-auto shadow-halo ${option.iconClassName}`}
           {visibleWidgetOptions.map((option) => {
             const isAllowedForSize = typeof option.isSizeAllowed === 'function'
               ? option.isSizeAllowed(widgetSize)
@@ -116,11 +103,6 @@ export default function WidgetTypePicker({
         </div>
       </div>
 
-      {visibleOptions.length === 0 && (
-        <div className="w-full rounded-golden bg-golden-input px-5 py-8 text-center text-sm font-bold text-golden-muted shadow-creuse">
-          Aucun widget ne correspond à cette recherche.
-        </div>
-      )}
       {visibleWidgetOptions.length === 0 && (
         <div className="w-full rounded-golden bg-golden-input px-5 py-8 text-center text-sm font-bold text-golden-muted shadow-creuse">
           Aucun widget ne correspond à cette recherche.
@@ -130,22 +112,22 @@ export default function WidgetTypePicker({
       <div className="bg-golden-input shadow-creuse rounded-golden flex items-center w-full max-w-[280px] self-center">
         <button
           type="button"
-          onClick={() => onWidgetSizeChange("SQUARE")}
+          onClick={() => onWidgetSizeChange('SQUARE')}
           className={`flex-1 py-2.5 rounded-golden text-sm font-bold transition-all duration-300 cursor-pointer ${
-            widgetSize === "SQUARE"
-              ? "bg-golden-primary text-gray-900 shadow-halo"
-              : "text-gray-500 hover:text-gray-900 bg-transparent"
+            widgetSize === 'SQUARE'
+              ? 'bg-golden-primary text-gray-900 shadow-halo'
+              : 'text-gray-500 hover:text-gray-900 bg-transparent'
           }`}
         >
           Carré
         </button>
         <button
           type="button"
-          onClick={() => onWidgetSizeChange("RECT")}
+          onClick={() => onWidgetSizeChange('RECT')}
           className={`flex-1 py-2.5 rounded-golden text-sm font-bold transition-all duration-300 cursor-pointer ${
-            widgetSize === "RECT"
-              ? "bg-golden-primary text-gray-900 shadow-halo"
-              : "text-gray-500 hover:text-gray-900 bg-transparent"
+            widgetSize === 'RECT'
+              ? 'bg-golden-primary text-gray-900 shadow-halo'
+              : 'text-gray-500 hover:text-gray-900 bg-transparent'
           }`}
         >
           Rectangle

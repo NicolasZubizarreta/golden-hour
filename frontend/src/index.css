@@ -20,7 +20,7 @@
 
 @layer components {
   .container-golden {
-    @apply w-full max-w-[1440px] mx-auto px-6 md:px-[48px];
+    @apply w-full max-w-[1440px] mx-auto px-6 md:px-[28px];
   }
 
   .widget-edit-jiggle {
